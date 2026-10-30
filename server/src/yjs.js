@@ -151,9 +151,26 @@ export function hasRoomDoc(roomId) {
 }
 
 /**
- * Returns total count of active Yjs documents in memory.
- * @returns {number}
+ * Closes all connected WebSockets for all rooms, destroys in-memory Yjs documents,
+ * and clears the document registry. Used for demo reset.
  */
+export function closeAllRooms() {
+  for (const [roomId, doc] of docs.entries()) {
+    if (doc.conns) {
+      for (const conn of doc.conns.keys()) {
+        try {
+          conn.close();
+        } catch (_) {}
+      }
+    }
+    try {
+      doc.destroy();
+    } catch (_) {}
+  }
+  docs.clear();
+}
+
 export function getOpenRoomCount() {
   return docs.size;
 }
+

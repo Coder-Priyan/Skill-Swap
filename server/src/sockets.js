@@ -253,3 +253,23 @@ export function emitToRoom(roomId, event, payload) {
 export function getIO() {
   return io;
 }
+
+/**
+ * Clears all in-memory room presence and room chat history.
+ */
+export function clearAllRoomState() {
+  roomPresence.clear();
+  roomHistory.clear();
+}
+
+/**
+ * Emits an event to all connected sockets across the platform.
+ * @param {string} event 
+ * @param {object} payload 
+ */
+export function emitToAll(event, payload) {
+  if (io) {
+    io.emit(event, payload);
+  }
+}
+

@@ -4,13 +4,13 @@ SkillSwap is an audit-verifiable, peer-to-peer micro-mentorship and live code co
 
 ---
 
-## Architecture Sentence
+## 🏛️ Architecture
 
-SkillSwap pairs an Express backend backed by an append-only SQLite double-entry ledger and in-memory Yjs CRDT synchronization with a Vite React client featuring Monaco live code collaboration, real-time Socket.io presence, and public zero-trust audit verification.
+SkillSwap pairs a single-process Node.js / Express backend backed by an append-only SQLite double-entry ledger (`WAL` mode) and in-memory Yjs CRDT synchronization with a Vite React client featuring Monaco live code collaboration, real-time Socket.io presence, and public zero-trust audit verification.
 
 ---
 
-## Key Features
+## 🚀 Key Features
 
 1. **Double-Entry Append-Only Credit Ledger**:
    - Zero mutable balance columns. User balances and running balances are computed dynamically as `SUM(delta)`.
@@ -46,9 +46,14 @@ SkillSwap pairs an Express backend backed by an append-only SQLite double-entry 
    - Read-only code archive preserved in the session's selected programming language with instant code download (`.js`, `.py`, `.ts`, etc.).
    - Persistent, editable collaborative session summary notes for participants.
 
+8. **Hardened Production Mode & In-Process Demo Reset**:
+   - Single-process production deployment: Express serves optimized static assets and handles SPA routing fallback for `/room/*` and `/profile`.
+   - 0.0.0.0 LAN binding displaying local WiFi URLs for cross-device evaluation (phones/tablets/laptops).
+   - In-process demo reset (`POST /api/demo/reset`) restores the deterministic seed and resets all rooms in a single transaction without killing the server.
+
 ---
 
-## Prerequisites
+## 💻 Prerequisites
 
 - **Node.js**: v18.0.0 or higher (v22+ recommended)
 - **npm**: v9.0.0 or higher
@@ -56,122 +61,80 @@ SkillSwap pairs an Express backend backed by an append-only SQLite double-entry 
 
 ---
 
-## Quick Setup
+## ⚡ Quick Start & Production Mode
 
-1. **Install Dependencies**:
-   ```powershell
-   npm install
-   ```
-
-2. **Reset / Seed Database**:
-   Wipes and deterministically initializes `server/data/skillswap.db` with 14 users, skills, slots, starting grants (140 platform credits minted), booking histories, and pristine audit conservation:
-   ```powershell
-   npm run demo:reset
-   ```
-
-3. **Start Development Server**:
-   Launches both the backend API (port 4000) and the Vite client (port 5173) concurrently:
-   ```powershell
-   npm run dev
-   ```
-
-4. Open your browser at [http://localhost:5173](http://localhost:5173).
-
-> **Important Demo Notice**: Do **NOT** restart the backend server during a live session demo. Collaborative Yjs documents and room chat history live in server memory for the duration of the server process; restarting the server clears active in-memory editor states.
-
----
-
-## Test Commands
-
-Execute the test suites via plain Node test runners with zero external test framework bloat:
-
+### 1. Installation
 ```powershell
-# Run individual test suites
-npm run test:db        # Database schema, foreign keys & uniqueness constraints
-npm run test:bookings  # Booking lifecycle, status flow & credit reservation
-npm run test:sockets   # Real-time Socket.io event delivery
-npm run test:profile   # User profile data, skills & privacy boundaries
-npm run test:room      # Live room entry & participant authorization
-npm run test:ledger    # Double-entry settlement, atomicity & concurrency
-npm run test:slice7    # Ratings, 5-star bonus minting, audit, leaderboard & notes
-
-# Run all test suites in sequence
-npm run test:all
+npm install
 ```
 
-All test scripts verify strict error conditions and guarantee an exit code of `1` upon assertion failure.
+### 2. Production Mode (Recommended for Demos & Judging)
+Builds the client SPA, resets the database to the deterministic seed, and starts the unified single-process server:
+```powershell
+npm run demo:prod
+```
+The server listens on `0.0.0.0:4000` and displays:
+```
+🚀 SkillSwap Server running at:
+   Local:        http://localhost:4000
+   On your wifi: http://192.168.x.x:4000
+   Health:       http://localhost:4000/api/health
+   Users:        http://localhost:4000/api/users
+```
+Open `http://localhost:4000` or the WiFi URL on any phone or laptop on the same local network!
+
+### 3. Development Mode
+To run client (Vite HMR on port 5173) and backend API (Express on port 4000) concurrently:
+```powershell
+npm run dev
+```
+
+### 4. In-Process Demo Reset
+To restore the platform to the initial clean seed at any time during an active demo:
+- **From the UI**: Click the **"🔄 Reset Demo"** button in the top navigation bar.
+- **From the CLI**:
+  ```powershell
+  npm run demo:reset
+  ```
 
 ---
 
-## Demo Walkthrough
+## 🧪 Smoke Testing & Verification
 
-Follow this step-by-step click path to demonstrate the entire platform flow:
-
-1. **Open the Application**:
-   Navigate to [http://localhost:5173](http://localhost:5173).
-   The active user defaults to **Tanvi** (`usr_terminaltinkerer`, balance: 5 credits).
-
-2. **Request a Mentorship Session**:
-   - On the **Directory** page, search for **Priya** (`usr_pixelpriya`).
-   - Click **"Book Session"** on Priya's card.
-   - Enter topic: `"React State Management"`, note: `"Need help with context and reducers"`, pick an available time slot, and click **"Send Request"**.
-   - Notice Tanvi's available balance adjusts dynamically to reflect the 5 reserved credits.
-
-3. **Accept the Session as Mentor**:
-   - In the top navigation bar, use the **User Switcher** dropdown to switch to **Priya** (`usr_pixelpriya`).
-   - Go to the **Bookings** tab. Under **"Requests as Mentor"**, locate Tanvi's request.
-   - Click **"Accept"**. The booking moves to **"Accepted & Upcoming"**.
-
-4. **Join the Live Collaboration Room**:
-   - Click **"Join Room"** on the accepted booking card.
-   - The browser opens `/room/bok_...`.
-   - Switch the User Switcher back to **Tanvi** (or open in a second browser window) and click **"Join Room"** from Tanvi's Bookings tab.
-   - Notice both participants show as active in the room header presence indicator.
-
-5. **Live Code & Ephemeral Chat**:
-   - Select a language (e.g. `javascript`).
-   - Type code into the Monaco editor — keystrokes replicate live between both participants via Yjs CRDTs.
-   - Send messages in the live in-room chat panel.
-
-6. **End Session & Atomic Settlement**:
-   - Either participant clicks the red **"End Session"** button in the top bar.
-   - Confirm the end session prompt.
-   - The session terminates instantly. The settlement modal pops up:
-     - Tanvi (learner): 5 credits transferred (`session_spend`).
-     - Priya (mentor): 5 credits earned (`session_earn`).
-     - Both balances update live across all open tabs via Socket.io.
-
-7. **Rate 5 Stars & Mint Bonus Credit**:
-   - As **Tanvi** (the learner), dismiss the settlement modal by clicking **"Done"**.
-   - The **Rating Modal** appears immediately.
-   - Select **5 Stars** (notice the glowing badge: `⭐ 5 Stars awards +1 bonus credit to your mentor!`).
-   - Enter a brief review comment (e.g. `"Super clear explanation, solved my issue in 20 mins!"`) and click **"Submit Rating"**.
-   - A success notification confirms: `⭐ Rating submitted! +1 bonus credit awarded to Priya!`.
-   - Priya receives a live toast notification: `Tanvi rated you 5 stars (+1 bonus credit)`.
-
-8. **Verify the Public Audit Page**:
-   - Click **Audit** in the navigation bar (`/audit`).
-   - The top banner flashes bright green: **"All 7 integrity checks passed — Credits fully conserved"**.
-   - Check the **Minted vs. In-Circulation** card:
-     - Grants: **140**
-     - Bonuses: **1**
-     - Total Minted: **141**
-     - Total In Circulation: **141**
-   - Review the **Recent Settlements** table: see the newest settlement entry with side-by-side matching proof (`-5 / +5`).
-
-9. **Check Leaderboard & Session Notes**:
-   - Click **Leaderboard** (`/leaderboard`) to view Priya rising on the podium with her updated session count and average rating.
-   - Navigate to **Bookings** → Click **"📝 Notes"** on the completed booking (`/sessions/:bookingId`).
-   - View the immutable read-only code archive, click **"Download code"**, and edit the collaborative session summary note.
+SkillSwap provides an automated cross-platform HTTP smoke test that verifies all critical API contracts, header-based balance privacy, and audit conservation rules against a running server:
+```powershell
+npm run smoke
+```
+Default target is `http://localhost:4000`. Set `BASE_URL` in environment to target a remote or alternate port:
+```powershell
+$env:BASE_URL="http://localhost:4100"; npm run smoke; $env:BASE_URL=""
+```
 
 ---
 
-## Future Ideas & Roadmap
+## 🛡️ Test Suite Reference
 
-- **Interactive Whiteboard**: Real-time canvas sharing for system design architecture diagrams using Excalidraw / HTML5 Canvas.
-- **Peer-to-Peer Voice & Video**: WebRTC mesh audio/video calling integrated directly alongside Monaco code editing.
-- **Production Authentication**: OAuth 2.0 (GitHub / Google) and session cookie tokens replacing the development User Switcher.
-- **Reputation Staking & Escrow**: Configurable escrow release periods for larger project-based mentorship milestones.
-- **Community Moderation & Reporting**: Flagging, review disputation, and peer moderation tools.
-- **PostgreSQL / Distributed Database Migration**: Migration path from SQLite to PostgreSQL with row-level locking for enterprise multi-node scale.
-- **Production Cloud Deployment**: Dockerized container deployment with automated CI/CD pipelines on AWS / GCP.
+All automated tests use plain Node.js with zero external test runners, assert strict error handling, and exit non-zero on failure. Every test script honors `FORCE_FAIL=1` for failsafe testing.
+
+| Command | File | What it Proves |
+| :--- | :--- | :--- |
+| `npm run test:db` | `server/tests/db-sanity.js` | Verifies SQLite schema creation, foreign key enforcement, uniqueness constraints, and the node:sqlite compatibility fallback. |
+| `npm run test:bookings` | `server/tests/bookings.test.js` | Validates the complete booking state machine (`requested` → `accepted` → `in_progress` → `completed`), mentor level gates (`mentor.level >= learner.level`), and duplicate booking prevention. |
+| `npm run test:sockets` | `server/tests/sockets.test.js` | Proves real-time Socket.io delivery: authenticated user rooms, booking event broadcasts, room joining, and disconnect handling. |
+| `npm run test:profile` | `server/tests/profile.test.js` | Tests user profile retrieval, skill associations, availability slots, and strict ledger privacy (balance fields hidden from other users). |
+| `npm run test:room` | `server/tests/room.test.js` | Confirms live room access control (rejects non-participants), Yjs CRDT synchronization convergence across concurrent edits, and in-room chat. |
+| `npm run test:ledger` | `server/tests/ledger.test.js` | Demonstrates double-entry settlement atomicity, double-spend prevention under concurrent requests, and running balance calculation. |
+| `npm run test:slice7` | `server/tests/slice7.test.js` | Proves 5-star review bonus minting (+1 credit), idempotent rating submissions, session notes code persistence, and mentor leaderboard rankings. |
+| `npm run test:integrity` | `server/tests/integrity.test.js` | Formally verifies the 5 platform conservation invariants: total circulating credits = total minted tokens, zero non-negative balance histories, and valid foreign keys. |
+| `npm run test:prod` | `server/tests/prod.test.js` | Validates production single-process serving: client SPA routing fallbacks (`/room/*`, `/profile`), static asset caching headers, JSON 404s, and Yjs WebSocket upgrades. |
+| `npm run test:demo` | `server/tests/demo.test.js` | Tests in-process demo reset (`POST /api/demo/reset`): atomic database re-seeding, Yjs room cleanup, socket broadcast notification, and production security disablement. |
+| `npm run test:failsafe` | `server/tests/failsafe.js` | Spawns all 10 test suites with `FORCE_FAIL=1` and asserts that every single file exits with a non-zero exit code. |
+| `npm run test:all` | *(All 10 suites)* | Runs the entire end-to-end integration test suite sequentially. |
+
+---
+
+## 📖 Additional Documentation
+
+- [Live 4-Minute Demo Script & Pre-Demo Checklist](file:///f:/HackathonCodeAsap/docs/DEMO_SCRIPT.md)
+- [Judge Evaluation Matrix & Requirements Proofs](file:///f:/HackathonCodeAsap/docs/JUDGES.md)
+- [Full Technical Specification & Decisions Log](file:///f:/HackathonCodeAsap/SPEC.md)

@@ -303,12 +303,19 @@ export function getAudit() {
   return apiRequest('/api/audit');
 }
 
-/**
- * GET /api/leaderboard
- * Top helpers and current user standing
- */
 export function getLeaderboard() {
   return apiRequest('/api/leaderboard');
 }
+
+/**
+ * POST /api/demo/reset
+ * Resets database and active rooms to clean seed state (demo mode only)
+ */
+export function resetDemoData() {
+  return apiRequest('/api/demo/reset', {
+    method: 'POST',
+  });
+}
+
 
 

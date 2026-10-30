@@ -120,6 +120,10 @@ export function getMetaHandler(req, res) {
       { id: 'evening', label: 'Evening (17:00+)' },
     ];
 
+    const isDemoMode = process.env.DEMO_MODE !== undefined
+      ? process.env.DEMO_MODE === 'true'
+      : process.env.NODE_ENV !== 'production';
+
     res.json({
       topics,
       languages,
@@ -127,6 +131,7 @@ export function getMetaHandler(req, res) {
       days,
       dayparts,
       session_cost: SESSION_COST,
+      demo_mode: isDemoMode,
     });
   } catch (err) {
     console.error('Error in GET /api/meta:', err);

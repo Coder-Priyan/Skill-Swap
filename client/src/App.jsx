@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Routes, Route, NavLink, useNavigate, useLocation, useParams } from 'react-router-dom';
-import { getUsers, getUserProfile, getCurrentUserId, setCurrentUserId, getBookingsSummary } from './api';
+import { getUsers, getUserProfile, getCurrentUserId, setCurrentUserId, getBookingsSummary, getMeta, resetDemoData } from './api';
 import { connectSocket, subscribeToSocketEvent, disconnectSocket } from './socket';
 import UserSwitcher from './components/UserSwitcher';
 import Toasts from './components/Toasts';
@@ -37,6 +37,7 @@ export default function App() {
   const [toasts, setToasts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [demoMode, setDemoMode] = useState(false);
 
   // Dynamic document title update per route (Slice 7 polish)
   useEffect(() => {
@@ -115,6 +116,15 @@ export default function App() {
         setError('Failed to connect to backend server. Make sure the server is running on port 4000.');
         setLoading(false);
       });
+
+    // Check if server is running in demo mode
+    getMeta()
+      .then((meta) => {
+        if (meta && meta.demo_mode) {
+          setDemoMode(true);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Connect socket and fetch data when currentUserId changes
@@ -216,6 +226,19 @@ export default function App() {
       refreshAllUserData();
     });
 
+    const unsubDemoReset = subscribeToSocketEvent('demo:reset', () => {
+      addToast({
+        type: 'info',
+        title: 'Demo Data Reset 🔄',
+        message: 'Demo data was reset to pristine seed state.',
+        link: '/',
+      });
+      refreshAllUserData();
+      if (window.location.pathname.startsWith('/room/')) {
+        navigate('/');
+      }
+    });
+
     return () => {
       unsubReq();
       unsubAcc();
@@ -225,8 +248,35 @@ export default function App() {
       unsubLedger();
       unsubEnded();
       unsubRated();
+      unsubDemoReset();
     };
-  }, [addToast, refreshAllUserData]);
+  }, [addToast, refreshAllUserData, navigate]);
+
+  const handleResetDemo = async () => {
+    if (
+      window.confirm(
+        'Reset all demo data to pristine initial state?\n\nThis will re-seed all 14 users, clear open collaborative rooms, and reset balances to baseline.'
+      )
+    ) {
+      try {
+        await resetDemoData();
+        addToast({
+          type: 'success',
+          title: 'Demo Reset Complete ✨',
+          message: 'Database and live room state reset to clean seed.',
+          link: '/',
+        });
+        navigate('/');
+        refreshAllUserData();
+      } catch (err) {
+        addToast({
+          type: 'error',
+          title: 'Demo Reset Failed',
+          message: err.message || 'Could not reset demo data.',
+        });
+      }
+    }
+  };
 
   const handleUserSwitch = (newUserId) => {
     setCurrentUserIdState(newUserId);
@@ -315,6 +365,18 @@ export default function App() {
             <div className={`badge-pill ${getBadgeClass(currentProfile.level)}`}>
               Lvl {currentProfile.level} • {currentProfile.badge}
             </div>
+          )}
+
+          {/* Demo tools button (when demo_mode is active) */}
+          {demoMode && (
+            <button
+              className="btn-demo-tools"
+              onClick={handleResetDemo}
+              title="Reset demo data to clean seed"
+              aria-label="Reset demo data"
+            >
+              🔄 Reset Demo
+            </button>
           )}
 
           {/* User Switcher Dropdown */}
