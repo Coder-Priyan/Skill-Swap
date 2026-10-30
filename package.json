@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
     "seed": "npm run seed --workspace=server",
+    "demo:reset": "npm run seed --workspace=server",
     "test:db": "node server/tests/db-sanity.js",
     "test:bookings": "node server/tests/bookings.test.js",
     "test:sockets": "node server/tests/sockets.test.js",

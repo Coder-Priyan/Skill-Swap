@@ -39,7 +39,10 @@ SkillSwap is a peer-to-peer micro-mentorship and live code collaboration platfor
 
 - `npm run dev` — Runs both backend server (port 4000) and client dev server (port 5173) concurrently.
 - `npm run seed` — Seeds `server/data/skillswap.db` with deterministic sample data.
-- `npm run test:ledger` — Placeholder for ledger unit tests (added in Slice 6).
+- `npm run demo:reset` — Resets and re-seeds the demo database back to clean initial state.
+- `npm run test:all` — Runs all test suites sequentially.
+
+> **Important Demo Notice**: Do **NOT** restart the backend server during a live demo. Collaborative Yjs documents and room chat history live in server memory for the duration of the server process; restarting the server clears active in-memory editor states.
 
 ## Multi-User Testing with User Switcher
 
