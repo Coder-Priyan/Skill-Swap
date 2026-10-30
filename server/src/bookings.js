@@ -340,11 +340,17 @@ export function getBookingById(bookingId, currentUserId, targetDb = db) {
     if (booking.status === 'requested') {
       availableActions.push('accept', 'decline');
     } else if (booking.status === 'accepted') {
-      availableActions.push('cancel');
+      availableActions.push('join', 'cancel');
+    } else if (booking.status === 'in_progress') {
+      availableActions.push('join');
     }
   } else if (myRole === 'learner') {
-    if (booking.status === 'requested' || booking.status === 'accepted') {
+    if (booking.status === 'requested') {
       availableActions.push('cancel');
+    } else if (booking.status === 'accepted') {
+      availableActions.push('join', 'cancel');
+    } else if (booking.status === 'in_progress') {
+      availableActions.push('join');
     }
   }
 
@@ -450,3 +456,59 @@ export function getBookingsSummary(userId, targetDb = db) {
     total_actionable: pendingMentor,
   };
 }
+
+/**
+ * Start a booking session (Slice 5).
+ * Participant only; transitions accepted -> in_progress and records started_at.
+ * Idempotent: if already in_progress, returns existing booking without changing started_at.
+ * Any other status returns 409.
+ * 
+ * @param {object} params
+ * @param {string} params.bookingId
+ * @param {string} params.userId
+ * @param {object} [targetDb=db]
+ * @returns {{ booking: object, transitioned: boolean }}
+ */
+export function startBooking({ bookingId, userId }, targetDb = db) {
+  const booking = targetDb.prepare('SELECT * FROM bookings WHERE id = ?').get(bookingId);
+  if (!booking) {
+    const err = new Error('Booking not found');
+    err.status = 404;
+    throw err;
+  }
+
+  const isLearner = booking.learner_id === userId;
+  const isMentor = booking.mentor_id === userId;
+
+  if (!isLearner && !isMentor) {
+    const err = new Error('You do not have permission to start this booking');
+    err.status = 403;
+    throw err;
+  }
+
+  if (booking.status === 'in_progress') {
+    return {
+      booking: getBookingById(bookingId, userId, targetDb),
+      transitioned: false,
+    };
+  }
+
+  if (booking.status !== 'accepted') {
+    const err = new Error(`Cannot start booking in status '${booking.status}'`);
+    err.status = 409;
+    throw err;
+  }
+
+  const startedAt = new Date().toISOString();
+  targetDb.prepare(`
+    UPDATE bookings 
+    SET status = 'in_progress', started_at = ?
+    WHERE id = ?
+  `).run(startedAt, bookingId);
+
+  return {
+    booking: getBookingById(bookingId, userId, targetDb),
+    transitioned: true,
+  };
+}
+

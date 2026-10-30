@@ -9,10 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "monaco-editor": "^0.57.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0",
-    "socket.io-client": "^4.8.4"
+    "socket.io-client": "^4.8.4",
+    "y-monaco": "^0.1.6",
+    "y-websocket": "^1.5.4",
+    "yjs": "^13.6.33"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",

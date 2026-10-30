@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Routes, Route, NavLink, useNavigate } from 'react-router-dom';
+import { Routes, Route, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { getUsers, getUserProfile, getCurrentUserId, setCurrentUserId, getBookingsSummary } from './api';
 import { connectSocket, subscribeToSocketEvent, disconnectSocket } from './socket';
 import UserSwitcher from './components/UserSwitcher';
@@ -7,9 +7,11 @@ import Toasts from './components/Toasts';
 import Directory from './pages/Directory';
 import Bookings from './pages/Bookings';
 import Profile from './pages/Profile';
-import Room from './pages/Room';
 import Leaderboard from './pages/Leaderboard';
 import Audit from './pages/Audit';
+
+// Lazy-load Room page to keep main bundle light (Slice 5)
+const Room = React.lazy(() => import('./pages/Room'));
 
 export default function App() {
   const navigate = useNavigate();
@@ -142,6 +144,20 @@ export default function App() {
       refreshAllUserData();
     });
 
+    const unsubStarted = subscribeToSocketEvent('booking:started', (data) => {
+      const roomTarget = `/room/${data.bookingId}`;
+      if (!window.location.pathname.startsWith(roomTarget)) {
+        addToast({
+          type: 'success',
+          title: 'Session Live! 🔴',
+          message: data.message || 'Participant joined the room',
+          link: roomTarget,
+          actionText: 'Join now',
+        });
+      }
+      refreshAllUserData();
+    });
+
     const unsubLedger = subscribeToSocketEvent('ledger:updated', () => {
       refreshAllUserData();
     });
@@ -151,6 +167,7 @@ export default function App() {
       unsubAcc();
       unsubDec();
       unsubCan();
+      unsubStarted();
       unsubLedger();
     };
   }, [addToast, refreshAllUserData]);
@@ -304,7 +321,36 @@ export default function App() {
             <Route path="/profile" element={<Profile currentProfile={currentProfile} />} />
             <Route path="/profile/:id" element={<Profile currentProfile={currentProfile} />} />
             <Route path="/users/:id" element={<Profile currentProfile={currentProfile} />} />
-            <Route path="/room/:roomId" element={<Room />} />
+            <Route
+              path="/room/:bookingId"
+              element={
+                <React.Suspense
+                  fallback={
+                    <div className="loading-box">
+                      <div className="spinner" />
+                      <p>Loading session room...</p>
+                    </div>
+                  }
+                >
+                  <Room />
+                </React.Suspense>
+              }
+            />
+            <Route
+              path="/room/:bookingId/:roomId"
+              element={
+                <React.Suspense
+                  fallback={
+                    <div className="loading-box">
+                      <div className="spinner" />
+                      <p>Loading session room...</p>
+                    </div>
+                  }
+                >
+                  <Room />
+                </React.Suspense>
+              }
+            />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/audit" element={<Audit />} />
           </Routes>

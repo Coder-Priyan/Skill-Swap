@@ -184,6 +184,24 @@ export function cancelBooking(id) {
 }
 
 /**
+ * GET /api/bookings/:id
+ * @param {string} id
+ */
+export function getBooking(id) {
+  return apiRequest(`/api/bookings/${id}`);
+}
+
+/**
+ * POST /api/bookings/:id/start
+ * @param {string} id
+ */
+export function startBooking(id) {
+  return apiRequest(`/api/bookings/${id}/start`, {
+    method: 'POST',
+  });
+}
+
+/**
  * GET /api/ledger/:userId
  * @param {string} userId
  * @param {object} [params]

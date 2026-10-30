@@ -1,5 +1,6 @@
-// Booking Card component (SPEC.md Section 9 & Slice 3)
+// Booking Card component (SPEC.md Section 9 & Slice 3, 5)
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { acceptBooking, declineBooking, cancelBooking } from '../api.js';
 
 function formatRelativeTime(dateString) {
@@ -30,6 +31,7 @@ export default function BookingCard({
   const counterpart = role === 'learner' ? booking.mentor : booking.learner;
   const isPending = booking.status === 'requested' || booking.status === 'pending';
   const isAccepted = booking.status === 'accepted';
+  const isInProgress = booking.status === 'in_progress';
   const isClosed = ['declined', 'cancelled', 'completed', 'expired'].includes(booking.status);
 
   const handleAction = async (actionType) => {
@@ -58,6 +60,8 @@ export default function BookingCard({
         return 'badge-status-pending';
       case 'accepted':
         return 'badge-status-accepted';
+      case 'in_progress':
+        return 'badge-status-inprogress';
       case 'declined':
         return 'badge-status-declined';
       case 'cancelled':
@@ -97,7 +101,7 @@ export default function BookingCard({
 
         <div className="booking-status-tag-group">
           <span className={`status-pill ${getStatusBadgeClass(booking.status)}`}>
-            {booking.status}
+            {isInProgress ? 'LIVE' : booking.status}
           </span>
           {booking.cancelled_by && (
             <span className="cancelled-by-label">
@@ -124,6 +128,9 @@ export default function BookingCard({
         <div className="booking-timestamp-info">
           {booking.accepted_at && (
             <span>Accepted {formatRelativeTime(booking.accepted_at)}</span>
+          )}
+          {booking.started_at && (
+            <span>Started {formatRelativeTime(booking.started_at)}</span>
           )}
           {booking.cancelled_at && (
             <span>Cancelled {formatRelativeTime(booking.cancelled_at)}</span>
@@ -221,44 +228,45 @@ export default function BookingCard({
             </>
           )}
 
-          {/* Accepted State Actions */}
-          {isAccepted && (
+          {/* Accepted and In-Progress Actions */}
+          {(isAccepted || isInProgress) && (
             <>
-              {confirmDialog === 'cancel' ? (
-                <div className="confirm-inline">
-                  <span>Cancel session?</span>
+              {isAccepted && (
+                confirmDialog === 'cancel' ? (
+                  <div className="confirm-inline">
+                    <span>Cancel session?</span>
+                    <button
+                      className="btn btn-sm btn-danger"
+                      onClick={() => handleAction('cancel')}
+                      disabled={loadingAction === 'cancel'}
+                    >
+                      {loadingAction === 'cancel' ? '...' : 'Yes, Cancel'}
+                    </button>
+                    <button
+                      className="btn btn-sm btn-secondary"
+                      onClick={() => setConfirmDialog(null)}
+                    >
+                      Back
+                    </button>
+                  </div>
+                ) : (
                   <button
-                    className="btn btn-sm btn-danger"
-                    onClick={() => handleAction('cancel')}
-                    disabled={loadingAction === 'cancel'}
+                    className="btn btn-sm btn-outline-danger"
+                    onClick={() => setConfirmDialog('cancel')}
+                    disabled={Boolean(loadingAction)}
                   >
-                    {loadingAction === 'cancel' ? '...' : 'Yes, Cancel'}
+                    Cancel Session
                   </button>
-                  <button
-                    className="btn btn-sm btn-secondary"
-                    onClick={() => setConfirmDialog(null)}
-                  >
-                    Back
-                  </button>
-                </div>
-              ) : (
-                <button
-                  className="btn btn-sm btn-outline-danger"
-                  onClick={() => setConfirmDialog('cancel')}
-                  disabled={Boolean(loadingAction)}
-                >
-                  Cancel Session
-                </button>
+                )
               )}
 
-              {/* Disabled Join room button with tooltip per SPEC */}
-              <button
-                className="btn btn-sm btn-primary btn-disabled-hint"
-                disabled
-                title="Live room opens in the next update"
+              {/* Active Join room link */}
+              <Link
+                to={`/room/${booking.id}`}
+                className="btn btn-sm btn-primary"
               >
-                Join Room 🔒
-              </button>
+                Join Room 🚀
+              </Link>
             </>
           )}
         </div>

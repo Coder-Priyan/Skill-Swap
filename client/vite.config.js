@@ -3,6 +3,14 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      'monaco-editor/esm/vs': 'monaco-editor',
+    },
+  },
+  optimizeDeps: {
+    exclude: ['monaco-editor'],
+  },
   server: {
     port: 5173,
     proxy: {

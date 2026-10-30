@@ -1,22 +1,596 @@
-import React from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import * as Y from 'yjs';
+import { WebsocketProvider } from 'y-websocket';
+import { MonacoBinding } from 'y-monaco';
+import Editor from '@monaco-editor/react';
+import monaco from '../monacoConfig';
+import { getBooking, startBooking, getCurrentUserId } from '../api';
+import { getSocket, connectSocket } from '../socket';
+
+const LANGUAGES = [
+  { label: 'JavaScript', value: 'javascript' },
+  { label: 'TypeScript', value: 'typescript' },
+  { label: 'Python', value: 'python' },
+  { label: 'Java', value: 'java' },
+  { label: 'C++', value: 'cpp' },
+  { label: 'SQL', value: 'sql' },
+  { label: 'HTML', value: 'html' },
+  { label: 'CSS', value: 'css' },
+];
 
 export default function Room() {
-  return (
-    <div>
-      <div className="page-header">
-        <h1 className="page-title">Live Session Room</h1>
-        <p className="page-subtitle">
-          Real-time collaborative Monaco editor with Yjs synchronization and peer presence.
-        </p>
-      </div>
+  const { bookingId, roomId } = useParams();
+  const targetId = bookingId || roomId;
+  const navigate = useNavigate();
 
-      <div className="placeholder-box">
-        <span className="placeholder-icon">💻</span>
-        <h2>Monaco + Yjs Collaborative Editor</h2>
-        <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
-          Live remote cursors, shared code editing, multi-language support, and presence indicators.
-        </p>
-        <div className="placeholder-slice-tag">Added in Slice 5 (Live session room)</div>
+  const [booking, setBooking] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [sessionEnded, setSessionEnded] = useState(false);
+
+  // Connection status: 'live' | 'reconnecting' | 'offline'
+  const [connStatus, setConnStatus] = useState('live');
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  // Presence and Chat
+  const [presenceUsers, setPresenceUsers] = useState([]);
+  const [chatMessages, setChatMessages] = useState([]); // [{ id, userId, name, text, at, isSystem }]
+  const [chatInput, setChatInput] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('javascript');
+
+  const currentUserId = getCurrentUserId();
+  const editorRef = useRef(null);
+  const docRef = useRef(null);
+  const providerRef = useRef(null);
+  const bindingRef = useRef(null);
+  const chatBottomRef = useRef(null);
+  const prevPresenceRef = useRef([]);
+
+  // Auto-scroll chat to bottom
+  const scrollToBottom = () => {
+    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatMessages]);
+
+  // Load booking and start session
+  useEffect(() => {
+    if (!targetId || !currentUserId) return;
+
+    let isMounted = true;
+    setLoading(true);
+    setError(null);
+
+    getBooking(targetId)
+      .then(async (data) => {
+        if (!isMounted) return;
+
+        // Verify status
+        if (data.status === 'completed') {
+          setSessionEnded(true);
+          setLoading(false);
+          return;
+        }
+
+        if (data.status !== 'accepted' && data.status !== 'in_progress') {
+          setError(`Cannot open live room for booking in status "${data.status}"`);
+          setLoading(false);
+          return;
+        }
+
+        // Participant check
+        if (data.learner_id !== currentUserId && data.mentor_id !== currentUserId) {
+          setError('You are not an authorized participant for this session.');
+          setLoading(false);
+          return;
+        }
+
+        // Call POST /start (idempotent transition)
+        try {
+          const startedData = await startBooking(targetId);
+          if (isMounted) {
+            setBooking(startedData);
+            setLoading(false);
+          }
+        } catch (startErr) {
+          console.error('Failed to start booking:', startErr);
+          if (isMounted) {
+            setBooking(data);
+            setLoading(false);
+          }
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load booking:', err);
+        if (isMounted) {
+          setError(err.message || 'Booking not found');
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [targetId, currentUserId]);
+
+  // Live timer since started_at
+  useEffect(() => {
+    if (!booking?.started_at) return;
+
+    const startMs = new Date(booking.started_at).getTime();
+    const updateTimer = () => {
+      const now = Date.now();
+      setElapsedSeconds(Math.max(0, Math.floor((now - startMs) / 1000)));
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [booking?.started_at]);
+
+  // Socket.io room events: presence, chat, history
+  useEffect(() => {
+    if (!booking?.room_id) return;
+    const socket = getSocket();
+    if (!socket) return;
+
+    const currentRoomId = booking.room_id;
+
+    // Join room with ack callback
+    socket.emit('room:join', { roomId: currentRoomId }, (ack) => {
+      if (ack?.ok) {
+        if (ack.history && Array.isArray(ack.history)) {
+          setChatMessages(ack.history);
+        }
+      } else {
+        console.warn('[Room] Join rejected:', ack?.error);
+      }
+    });
+
+    const handlePresence = (data) => {
+      if (data.roomId !== currentRoomId) return;
+      const newUsers = data.users || [];
+      const oldUsers = prevPresenceRef.current;
+
+      // Add system messages for users joining or leaving
+      if (oldUsers.length > 0) {
+        newUsers.forEach((u) => {
+          if (!oldUsers.some((o) => o.id === u.id)) {
+            setChatMessages((prev) => [
+              ...prev,
+              {
+                id: `sys_join_${u.id}_${Date.now()}`,
+                isSystem: true,
+                text: `${u.name} joined the room`,
+                at: new Date().toISOString(),
+              },
+            ]);
+          }
+        });
+
+        oldUsers.forEach((o) => {
+          if (!newUsers.some((u) => u.id === o.id)) {
+            setChatMessages((prev) => [
+              ...prev,
+              {
+                id: `sys_leave_${o.id}_${Date.now()}`,
+                isSystem: true,
+                text: `${o.name} left the room`,
+                at: new Date().toISOString(),
+              },
+            ]);
+          }
+        });
+      }
+
+      prevPresenceRef.current = newUsers;
+      setPresenceUsers(newUsers);
+    };
+
+    const handleMessage = (msg) => {
+      setChatMessages((prev) => [...prev, msg]);
+    };
+
+    const handleConnect = () => setConnStatus('live');
+    const handleDisconnect = () => setConnStatus('reconnecting');
+
+    socket.on('room:presence', handlePresence);
+    socket.on('room:message', handleMessage);
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+
+    return () => {
+      socket.emit('room:leave', { roomId: currentRoomId });
+      socket.off('room:presence', handlePresence);
+      socket.off('room:message', handleMessage);
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+    };
+  }, [booking?.room_id]);
+
+  // Setup Monaco & Yjs
+  const handleEditorDidMount = useCallback((editor) => {
+    editorRef.current = editor;
+    if (!booking?.room_id) return;
+
+    const doc = new Y.Doc();
+    docRef.current = doc;
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    const wsUrl = `${protocol}//${host}/yjs`;
+
+    const provider = new WebsocketProvider(wsUrl, booking.room_id, doc, {
+      params: { userId: currentUserId },
+    });
+    providerRef.current = provider;
+
+    const ytext = doc.getText('code');
+    const meta = doc.getMap('meta');
+
+    // Awareness for remote cursors and names
+    const awareness = provider.awareness;
+    const currentUserProfile = booking.learner_id === currentUserId ? booking.learner : booking.mentor;
+    awareness.setLocalStateField('user', {
+      name: currentUserProfile?.name || 'Peer',
+      color: currentUserProfile?.avatar_color || '#38bdf8',
+    });
+
+    // Monaco Yjs binding
+    const binding = new MonacoBinding(
+      ytext,
+      editor.getModel(),
+      new Set([editor]),
+      awareness
+    );
+    bindingRef.current = binding;
+
+    // Generate dynamic CSS for remote awareness selections and cursors
+    awareness.on('change', () => {
+      const states = awareness.getStates();
+      let css = '';
+      states.forEach((state, clientID) => {
+        if (state.user) {
+          const color = state.user.color || '#38bdf8';
+          const name = state.user.name || 'Peer';
+          css += `
+            .yRemoteSelection.yRemoteSelection-${clientID} {
+              background-color: ${color}33 !important;
+            }
+            .yRemoteSelectionHead.yRemoteSelectionHead-${clientID} {
+              position: absolute;
+              border-left: 2px solid ${color} !important;
+              border-top: 2px solid ${color} !important;
+              border-bottom: 2px solid ${color} !important;
+              height: 100%;
+              box-sizing: border-box;
+            }
+            .yRemoteSelectionHead.yRemoteSelectionHead-${clientID}::after {
+              position: absolute;
+              content: '${name.replace(/'/g, "\\'")}';
+              top: -1.35em;
+              left: -2px;
+              background: ${color};
+              color: #ffffff;
+              font-size: 11px;
+              font-family: sans-serif;
+              font-weight: 600;
+              padding: 1px 5px;
+              border-radius: 3px;
+              white-space: nowrap;
+              pointer-events: none;
+              z-index: 10;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            }
+          `;
+        }
+      });
+
+      let styleEl = document.getElementById('yjs-cursor-styles');
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'yjs-cursor-styles';
+        document.head.appendChild(styleEl);
+      }
+      styleEl.innerHTML = css;
+    });
+
+    // Sync status listeners
+    provider.on('status', ({ status }) => {
+      if (status === 'connected') setConnStatus('live');
+      else if (status === 'connecting') setConnStatus('reconnecting');
+      else setConnStatus('offline');
+    });
+
+    // Language synchronization via Y.Map meta
+    meta.observe(() => {
+      const lang = meta.get('language') || 'javascript';
+      setSelectedLanguage(lang);
+      const model = editor.getModel();
+      if (model) {
+        monaco.editor.setModelLanguage(model, lang);
+      }
+    });
+
+    // Initial code seeding: ONLY THE LEARNER on initial sync
+    provider.on('synced', (isSynced) => {
+      if (isSynced && booking.learner_id === currentUserId) {
+        if (ytext.length === 0 && !meta.get('seeded')) {
+          doc.transact(() => {
+            ytext.insert(
+              0,
+              `// Topic: ${booking.topic}\n// Problem: ${booking.problem_note}\n\n`
+            );
+            meta.set('seeded', true);
+          });
+        }
+      }
+    });
+  }, [booking, currentUserId]);
+
+  // Cleanup Monaco & Yjs on unmount
+  useEffect(() => {
+    return () => {
+      if (bindingRef.current) bindingRef.current.destroy();
+      if (providerRef.current) providerRef.current.destroy();
+      if (docRef.current) docRef.current.destroy();
+      const styleEl = document.getElementById('yjs-cursor-styles');
+      if (styleEl) styleEl.remove();
+    };
+  }, []);
+
+  const handleLanguageChange = (newLang) => {
+    setSelectedLanguage(newLang);
+    if (docRef.current) {
+      const meta = docRef.current.getMap('meta');
+      meta.set('language', newLang);
+    }
+  };
+
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    const text = chatInput.trim();
+    if (!text || text.length > 500) return;
+
+    const socket = getSocket();
+    if (socket && booking?.room_id) {
+      socket.emit('room:message', {
+        roomId: booking.room_id,
+        text,
+      });
+      setChatInput('');
+    }
+  };
+
+  const formatTimer = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins >= 60) {
+      const hrs = Math.floor(mins / 60);
+      const remMins = mins % 60;
+      return `${hrs}:${String(remMins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  if (loading) {
+    return (
+      <div className="room-loading-container">
+        <div className="spinner" />
+        <p>Connecting to live mentorship room...</p>
+      </div>
+    );
+  }
+
+  if (sessionEnded) {
+    return (
+      <div className="card room-notice-card">
+        <span className="notice-icon">🏁</span>
+        <h2>This session has ended</h2>
+        <p>The code and mentorship session have completed and the room is closed.</p>
+        <Link to="/bookings" className="btn btn-primary" style={{ marginTop: '1.25rem' }}>
+          Back to Bookings
+        </Link>
+      </div>
+    );
+  }
+
+  if (error || !booking) {
+    return (
+      <div className="card room-notice-card">
+        <span className="notice-icon">🔒</span>
+        <h2>Access Restricted</h2>
+        <p>{error || 'Room unavailable'}</p>
+        <Link to="/bookings" className="btn btn-secondary" style={{ marginTop: '1.25rem' }}>
+          Back to Bookings
+        </Link>
+      </div>
+    );
+  }
+
+  const isLearnerPresent = presenceUsers.some((u) => u.id === booking.learner_id);
+  const isMentorPresent = presenceUsers.some((u) => u.id === booking.mentor_id);
+
+  return (
+    <div className="room-layout-container">
+      {/* Top Header Bar */}
+      <header className="room-header-bar">
+        <div className="room-header-left">
+          <Link to="/bookings" className="room-back-btn" title="Leave room view">
+            ← Bookings
+          </Link>
+
+          <div className="room-topic-badge">
+            <span className="topic-icon">🎯</span>
+            <span className="topic-title">{booking.topic}</span>
+          </div>
+
+          <div className="room-participants-presence">
+            {/* Learner */}
+            <div className="presence-participant-chip" title={isLearnerPresent ? `${booking.learner.name} is present` : `${booking.learner.name} is offline`}>
+              <div className="chip-avatar" style={{ backgroundColor: booking.learner.avatar_color }}>
+                {booking.learner.name.charAt(0)}
+              </div>
+              <span className="chip-name">{booking.learner.name}</span>
+              <span className="chip-role">Learner</span>
+              <span className={`presence-dot ${isLearnerPresent ? 'online' : 'offline'}`} />
+            </div>
+
+            {/* Mentor */}
+            <div className="presence-participant-chip" title={isMentorPresent ? `${booking.mentor.name} is present` : `${booking.mentor.name} is offline`}>
+              <div className="chip-avatar" style={{ backgroundColor: booking.mentor.avatar_color }}>
+                {booking.mentor.name.charAt(0)}
+              </div>
+              <span className="chip-name">{booking.mentor.name}</span>
+              <span className="chip-role">Mentor</span>
+              <span className={`presence-dot ${isMentorPresent ? 'online' : 'offline'}`} />
+            </div>
+          </div>
+        </div>
+
+        <div className="room-header-right">
+          {/* Live Timer */}
+          <div className="live-timer-chip" title="Live session duration">
+            <span className="timer-icon">⏱️</span>
+            <span className="timer-text">{formatTimer(elapsedSeconds)}</span>
+          </div>
+
+          {/* Connection Status Badge */}
+          <div className={`connection-status-badge status-${connStatus}`}>
+            <span className="status-indicator-dot" />
+            <span className="status-label">
+              {connStatus === 'live' ? 'Live' : connStatus === 'reconnecting' ? 'Reconnecting' : 'Offline'}
+            </span>
+          </div>
+
+          {/* Escrow Credit Chip */}
+          <div className="room-cost-chip" title="Session cost held in reservation">
+            🪙 <span>{booking.cost} cr will move when the session ends</span>
+          </div>
+
+          {/* End Session Button (Disabled until Slice 6 Settlement) */}
+          <button
+            className="btn btn-sm btn-disabled"
+            disabled
+            title="Settlement arrives in the next update"
+          >
+            End session
+          </button>
+        </div>
+      </header>
+
+      {/* Main Collaborative Area */}
+      <div className="room-workspace-grid">
+        {/* Monaco Editor Pane */}
+        <div className="editor-pane-container">
+          <div className="editor-controls-bar">
+            <div className="editor-language-select-wrap">
+              <span className="control-label">Language:</span>
+              <select
+                className="language-select-dropdown"
+                value={selectedLanguage}
+                onChange={(e) => handleLanguageChange(e.target.value)}
+              >
+                {LANGUAGES.map((l) => (
+                  <option key={l.value} value={l.value}>
+                    {l.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="editor-status-indicators">
+              <span className="editor-collab-tag">
+                ⚡ Real-time Yjs Sync Enabled
+              </span>
+            </div>
+          </div>
+
+          <div className="monaco-wrapper">
+            <Editor
+              height="100%"
+              theme="vs-dark"
+              language={selectedLanguage}
+              options={{
+                fontSize: 14,
+                fontFamily: 'Fira Code, Consolas, Monaco, monospace',
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                wordWrap: 'on',
+                lineNumbers: 'on',
+                automaticLayout: true,
+                padding: { top: 12, bottom: 12 },
+              }}
+              onMount={handleEditorDidMount}
+            />
+          </div>
+        </div>
+
+        {/* Live Chat Panel */}
+        <div className="room-chat-panel">
+          <div className="chat-panel-header">
+            <h4>💬 Session Chat</h4>
+            <span className="chat-online-count">
+              {presenceUsers.length} in room
+            </span>
+          </div>
+
+          <div className="chat-messages-container">
+            {chatMessages.length === 0 ? (
+              <div className="chat-empty-hint">
+                <span>Say hello to start coordinating your session!</span>
+              </div>
+            ) : (
+              chatMessages.map((msg) => {
+                if (msg.isSystem) {
+                  return (
+                    <div key={msg.id} className="chat-system-msg">
+                      <span>{msg.text}</span>
+                    </div>
+                  );
+                }
+
+                const isOwn = msg.userId === currentUserId;
+                return (
+                  <div
+                    key={msg.id}
+                    className={`chat-bubble-wrap ${isOwn ? 'own-bubble' : 'peer-bubble'}`}
+                  >
+                    {!isOwn && (
+                      <span className="chat-sender-name">{msg.name}</span>
+                    )}
+                    <div className="chat-bubble">{msg.text}</div>
+                    <span className="chat-msg-time">
+                      {new Date(msg.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                );
+              })
+            )}
+            <div ref={chatBottomRef} />
+          </div>
+
+          <form className="chat-input-form" onSubmit={handleSendMessage}>
+            <input
+              type="text"
+              className="chat-input-field"
+              placeholder="Type a message (Enter to send)..."
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              maxLength={500}
+            />
+            <button
+              type="submit"
+              className="btn btn-primary btn-sm chat-send-btn"
+              disabled={!chatInput.trim()}
+            >
+              Send
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

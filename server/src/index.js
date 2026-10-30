@@ -7,6 +7,7 @@ import peersRoutes, { getMetaHandler } from './routes/peers.js';
 import bookingsRoutes from './routes/bookings.js';
 import ledgerRoutes from './routes/ledger.js';
 import { initSockets } from './sockets.js';
+import { initYjs } from './yjs.js';
 
 dotenv.config();
 
@@ -15,6 +16,9 @@ const server = http.createServer(app);
 
 // Initialize Socket.io on the HTTP server
 initSockets(server);
+
+// Initialize Yjs WebSocket server on the HTTP server (Slice 5)
+initYjs(server);
 
 const PORT = process.env.PORT || 4000;
 

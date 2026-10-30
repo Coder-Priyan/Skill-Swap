@@ -5,6 +5,8 @@ import {
   acceptBooking,
   declineBooking,
   cancelBooking,
+  startBooking,
+  getBookingById,
   getBookings,
   getBookingsSummary,
 } from '../bookings.js';
@@ -200,4 +202,61 @@ router.post('/:id/cancel', (req, res) => {
   }
 });
 
+/**
+ * GET /api/bookings/:id
+ * Retrieve single booking for participant
+ */
+router.get('/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const booking = getBookingById(id, req.currentUserId);
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    if (booking.learner_id !== req.currentUserId && booking.mentor_id !== req.currentUserId) {
+      return res.status(403).json({ error: 'Forbidden: you are not a participant in this booking' });
+    }
+
+    res.json(booking);
+  } catch (err) {
+    const status = err.status || 500;
+    res.status(status).json({ error: err.message || 'Failed to retrieve booking' });
+  }
+});
+
+/**
+ * POST /api/bookings/:id/start
+ * Starts session (transitions accepted -> in_progress), idempotent
+ */
+router.post('/:id/start', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { booking, transitioned } = startBooking({
+      bookingId: id,
+      userId: req.currentUserId,
+    });
+
+    if (transitioned) {
+      const otherUserId = req.currentUserId === booking.learner_id ? booking.mentor_id : booking.learner_id;
+      const starterName = req.currentUserId === booking.learner_id ? booking.learner.name : booking.mentor.name;
+      emitToUser(otherUserId, 'booking:started', {
+        bookingId: booking.id,
+        roomId: booking.room_id,
+        booking,
+        message: `${starterName} joined the room`,
+      });
+    }
+
+    res.json(booking);
+  } catch (err) {
+    const status = err.status || 500;
+    if (status >= 500) {
+      console.error(`Error in POST /api/bookings/${req.params.id}/start:`, err);
+    }
+    res.status(status).json({ error: err.message || 'Failed to start booking' });
+  }
+});
+
 export default router;
+
