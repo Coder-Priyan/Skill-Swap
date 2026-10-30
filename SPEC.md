@@ -163,4 +163,10 @@ Show green/red checks plus the numbers. This is what we show judges to prove the
 - **Cancelled by column**: A nullable `cancelled_by TEXT` column is tracked on `bookings` to record whether the learner or mentor cancelled an accepted booking.
 - **Socket.io event delivery**: Socket events (`booking:requested`, `booking:accepted`, `booking:declined`, `booking:cancelled`, `ledger:updated`) are dispatched immediately after database transactions commit.
 - **Credit reservation in Slice 3 & 4**: Available credits are dynamically computed as `balance - reserved_credits`, where `reserved_credits = sum(cost)` of bookings in `accepted` or `in_progress`. No ledger mutations occur until session completion (Slice 6).
+- **Profile credit privacy**: `balance`, `reserved_credits`, and `available_credits`, along with `total_credits_spent` and `total_credits_earned`, are returned on `GET /api/users/:id` ONLY when `X-User-Id` matches `:id`. For other users, these credit fields are omitted while public identity, badges, skills, and slots remain visible.
+- **Room entry timing**: Joining a room is allowed at any time after a booking is accepted (`accepted` or `in_progress`); the slot label is informational only.
+- **Session start trigger**: A booking transitions from `accepted` to `in_progress` when the first participant joins the room (`POST /api/bookings/:id/start`); both participants do not need to be present simultaneously for the session to become `in_progress`.
+- **In-memory live room chat**: Live room chat messages are kept in server memory (last 100 messages per room) and are not persisted to SQLite.
+- **In-memory Yjs documents**: Yjs document state lives in server memory for the lifetime of the process (a server restart resets unsaved editor contents; avoid running the server in watch/auto-restart mode during demonstrations).
+
 

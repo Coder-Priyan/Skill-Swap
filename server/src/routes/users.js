@@ -138,10 +138,19 @@ router.get('/:id', validateUserHeader, (req, res) => {
       WHERE user_id = ? AND kind = 'session_spend'
     `).get(id).total;
 
-    // Credit calculations via ledger.js (Section 4)
-    const balance = getUserBalance(id);
-    const reservedCredits = getUserReservedCredits(id);
-    const availableCredits = getUserAvailableCredits(id);
+    // Check if requesting user is viewing their own profile
+    const currentUserId = req.header('X-User-Id');
+    const isSelf = currentUserId === id;
+
+    // Credit calculations via ledger.js (Section 4) - only for self
+    let balance;
+    let reservedCredits;
+    let availableCredits;
+    if (isSelf) {
+      balance = getUserBalance(id);
+      reservedCredits = getUserReservedCredits(id);
+      availableCredits = getUserAvailableCredits(id);
+    }
 
     // Level and badge rules (Section 5 & Slice 4)
     const level = calculateLevel(mentorSessions);
@@ -156,6 +165,19 @@ router.get('/:id', validateUserHeader, (req, res) => {
       acceptedBookingsCount: acceptedBookings,
     });
 
+    const stats = {
+      sessions_completed_as_mentor: mentorSessions,
+      sessions_completed_as_learner: learnerSessions,
+      total_sessions_completed: mentorSessions + learnerSessions,
+      rating_avg: ratingRow.avg_rating ? Math.round(ratingRow.avg_rating * 10) / 10 : null,
+      rating_count: ratingRow.rating_count || 0,
+    };
+
+    if (isSelf) {
+      stats.total_credits_earned = totalCreditsEarned;
+      stats.total_credits_spent = totalCreditsSpent;
+    }
+
     const profile = {
       id: user.id,
       name: user.name,
@@ -166,9 +188,6 @@ router.get('/:id', validateUserHeader, (req, res) => {
       languages: user.languages ? user.languages.split(',').map((s) => s.trim()) : [],
       is_online: Boolean(user.is_online),
       created_at: user.created_at,
-      balance,
-      reserved_credits: reservedCredits,
-      available_credits: availableCredits,
       level,
       badge,
       badges,
@@ -176,16 +195,14 @@ router.get('/:id', validateUserHeader, (req, res) => {
       badge_details: badgeDetails,
       skills,
       slots,
-      stats: {
-        sessions_completed_as_mentor: mentorSessions,
-        sessions_completed_as_learner: learnerSessions,
-        total_sessions_completed: mentorSessions + learnerSessions,
-        total_credits_earned: totalCreditsEarned,
-        total_credits_spent: totalCreditsSpent,
-        rating_avg: ratingRow.avg_rating ? Math.round(ratingRow.avg_rating * 10) / 10 : null,
-        rating_count: ratingRow.rating_count || 0,
-      },
+      stats,
     };
+
+    if (isSelf) {
+      profile.balance = balance;
+      profile.reserved_credits = reservedCredits;
+      profile.available_credits = availableCredits;
+    }
 
     res.json(profile);
   } catch (err) {

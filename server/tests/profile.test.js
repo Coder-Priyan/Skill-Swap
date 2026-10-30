@@ -189,6 +189,34 @@ async function runTests() {
       priyaData.badges.length > 0;
     record('GET /api/users/:id returns intact legacy badge and badges fields', oldFieldsOk, `badge: ${priyaData.badge}, badges: ${JSON.stringify(priyaData.badges)}`);
 
+    // 9. Cover: GET /api/users/:id privacy for balance, credits, and spend/earn stats
+    console.log('\n--- 9. GET /api/users/:id privacy rules ---');
+    const selfRes = await fetch(`${baseUrl}/api/users/usr_pixelpriya`, {
+      headers: { 'X-User-Id': 'usr_pixelpriya' },
+    });
+    const selfData = await selfRes.json();
+    const selfHasCredits = 'balance' in selfData &&
+      'reserved_credits' in selfData &&
+      'available_credits' in selfData &&
+      'total_credits_earned' in selfData.stats &&
+      'total_credits_spent' in selfData.stats;
+    record('Self profile request (X-User-Id === :id) contains credit and balance fields', selfHasCredits);
+
+    const otherRes = await fetch(`${baseUrl}/api/users/usr_pixelpriya`, {
+      headers: { 'X-User-Id': 'usr_terminaltinkerer' },
+    });
+    const otherData = await otherRes.json();
+    const otherOmitsCredits = !('balance' in otherData) &&
+      !('reserved_credits' in otherData) &&
+      !('available_credits' in otherData) &&
+      !('total_credits_earned' in otherData.stats) &&
+      !('total_credits_spent' in otherData.stats) &&
+      'level' in otherData &&
+      'badges' in otherData &&
+      'skills' in otherData &&
+      'slots' in otherData;
+    record('Other user profile request (X-User-Id !== :id) omits balance & credit fields', otherOmitsCredits);
+
   } catch (err) {
     console.error('Unexpected test execution error:', err);
     failed++;
