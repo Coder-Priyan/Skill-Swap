@@ -380,9 +380,29 @@ try {
       }
     }
 
-    // Verify my_rank exists
-    if (!lbData.my_rank || lbData.my_rank.id !== 'usr_terminaltinkerer') {
-      throw new Error('Expected my_rank for Tanvi in leaderboard response');
+    // Verify every ranked mentor has at least 1 completed session as mentor (0-session users never appear)
+    for (const mentor of lbData.leaderboard) {
+      if (!mentor.sessions_as_mentor || mentor.sessions_as_mentor < 1) {
+        throw new Error(`User with < 1 session (${mentor.id}) found on leaderboard: ${mentor.sessions_as_mentor}`);
+      }
+    }
+    const zeroSessionUser = lbData.leaderboard.find((m) => m.id === 'usr_terminaltinkerer' || m.id === 'usr_shadersorcerer');
+    if (zeroSessionUser) {
+      throw new Error(`User with 0 sessions (${zeroSessionUser.id}) must never appear on leaderboard`);
+    }
+
+    // Verify my_rank is null for Tanvi (0 sessions as mentor)
+    if (lbData.my_rank !== null) {
+      throw new Error(`Expected my_rank=null for Tanvi (0 sessions as mentor), got ${JSON.stringify(lbData.my_rank)}`);
+    }
+
+    // Requesting as Priya (top mentor) returns my_rank with rank 1
+    const lbPriyaRes = await fetch(`${BASE_URL}/api/leaderboard`, {
+      headers: { 'X-User-Id': 'usr_pixelpriya' },
+    });
+    const lbPriyaData = await lbPriyaRes.json();
+    if (!lbPriyaData.my_rank || lbPriyaData.my_rank.id !== 'usr_pixelpriya' || lbPriyaData.my_rank.rank !== 1) {
+      throw new Error(`Expected my_rank=1 for Priya, got ${JSON.stringify(lbPriyaData.my_rank)}`);
     }
 
     // Verify privacy: NO balance fields
@@ -391,7 +411,7 @@ try {
       throw new Error('Leaderboard response leaked balance fields!');
     }
 
-    console.log('  PASS (6): leaderboard: ordering is correct by stated tie-breakers, 10 rows max, no balance fields');
+    console.log('  PASS (6): leaderboard: ordering is correct by stated tie-breakers, 10 rows max, 0-session users never appear, no balance fields');
   }
 
   // --- CASE 7: notes: POST summary ---

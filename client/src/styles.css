@@ -3610,6 +3610,18 @@ body {
   margin: 0 auto;
 }
 
+.podium-grid.podium-count-1 {
+  display: flex;
+  justify-content: center;
+  max-width: 320px;
+}
+
+.podium-grid.podium-count-2 {
+  display: flex;
+  justify-content: center;
+  max-width: 560px;
+}
+
 .podium-card {
   background: var(--bg-card);
   border-radius: var(--radius-lg);

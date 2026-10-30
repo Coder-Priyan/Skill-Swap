@@ -4,6 +4,9 @@ import { runSeed } from '../src/seed.js';
 import { checkIntegrity } from '../src/ledger.js';
 
 async function main() {
+  if (process.env.FORCE_FAIL === '1') {
+    throw new Error('Forced failure triggered by FORCE_FAIL=1');
+  }
   console.log('🧪 Starting checkIntegrity Clean & Corruption Test...');
 
   // 1. Clean Seed Verification

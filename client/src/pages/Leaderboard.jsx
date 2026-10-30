@@ -59,16 +59,27 @@ export default function Leaderboard({ currentUser, onSelectPeer }) {
     );
   }
 
-  const { leaderboard = [], my_rank = null, total_helpers = 0 } = data || {};
+  const { leaderboard = [], my_rank = null, total_mentors, total_helpers } = data || {};
+  const totalRankedMentors = total_mentors !== undefined ? total_mentors : (total_helpers || leaderboard.length);
   const top3 = leaderboard.slice(0, 3);
   const rest = leaderboard.slice(3);
 
-  // Podium positions: 2nd place on left, 1st place in center, 3rd place on right
-  const podiumOrder = [
-    top3[1] ? { ...top3[1], place: 2, label: '2nd' } : null,
-    top3[0] ? { ...top3[0], place: 1, label: '1st' } : null,
-    top3[2] ? { ...top3[2], place: 3, label: '3rd' } : null,
-  ].filter(Boolean);
+  // Dynamic podium ordering based on available count
+  let podiumOrder = [];
+  if (top3.length === 1) {
+    podiumOrder = [{ ...top3[0], place: 1, label: '1st' }];
+  } else if (top3.length === 2) {
+    podiumOrder = [
+      { ...top3[1], place: 2, label: '2nd' },
+      { ...top3[0], place: 1, label: '1st' },
+    ];
+  } else if (top3.length >= 3) {
+    podiumOrder = [
+      { ...top3[1], place: 2, label: '2nd' },
+      { ...top3[0], place: 1, label: '1st' },
+      { ...top3[2], place: 3, label: '3rd' },
+    ];
+  }
 
   return (
     <div className="page-container leaderboard-page">
@@ -81,14 +92,25 @@ export default function Leaderboard({ currentUser, onSelectPeer }) {
           </p>
         </div>
         <div className="leaderboard-stat-pill">
-          <span className="stat-num">{total_helpers}</span> active mentors in community
+          <span className="stat-num">{totalRankedMentors}</span> active {totalRankedMentors === 1 ? 'mentor' : 'mentors'} in community
         </div>
       </header>
 
-      {/* Top 3 Podium */}
+      {/* Empty State when 0 ranked mentors */}
+      {totalRankedMentors === 0 && (
+        <section className="empty-state-box" style={{ padding: '3.5rem 1.5rem', textAlign: 'center', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', marginBottom: '2rem' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🏆</div>
+          <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>No mentors ranked yet</h3>
+          <p style={{ color: 'var(--text-secondary)', maxWidth: '420px', margin: '0 auto 1.5rem' }}>
+            Be the first to complete a live micro-mentorship session to take the #1 spot on the community leaderboard!
+          </p>
+        </section>
+      )}
+
+      {/* Top 3 Podium (handles 1, 2, or 3 entries) */}
       {top3.length > 0 && (
-        <section className="podium-section" aria-label="Top 3 Mentors Podium">
-          <div className="podium-grid">
+        <section className="podium-section" aria-label="Top Mentors Podium">
+          <div className={`podium-grid podium-count-${podiumOrder.length}`}>
             {podiumOrder.map((user) => {
               const isCurrentUser = currentUser && currentUser.id === user.id;
               const isFirst = user.place === 1;
@@ -225,17 +247,29 @@ export default function Leaderboard({ currentUser, onSelectPeer }) {
       )}
 
       {/* Current User Standing Card */}
-      {my_rank && (
+      {my_rank ? (
         <section className="my-standing-banner">
           <div className="standing-icon">🎯</div>
           <div className="standing-content">
             <div className="standing-title">
-              Your Current Standing: <strong>#{my_rank.rank}</strong> out of {total_helpers} mentors
+              Your Current Standing: <strong>#{my_rank.rank}</strong> out of {totalRankedMentors} mentors
             </div>
             <div className="standing-details">
               You have completed <strong>{my_rank.sessions_as_mentor}</strong> sessions as mentor
               {my_rank.rating_avg !== null ? ` with a ⭐ ${my_rank.rating_avg} average rating.` : '.'}
               {' '}Total mentorship earnings: <strong>{my_rank.total_earned} cr</strong>.
+            </div>
+          </div>
+        </section>
+      ) : (
+        <section className="my-standing-banner not-ranked">
+          <div className="standing-icon">🚀</div>
+          <div className="standing-content">
+            <div className="standing-title">
+              Help your first peer to join the leaderboard
+            </div>
+            <div className="standing-details">
+              Accept mentorship requests on your skills to earn platform credits, collect 5-star reviews, and climb the community ranks!
             </div>
           </div>
         </section>

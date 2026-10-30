@@ -52,31 +52,33 @@ router.get('/', (req, res) => {
       FROM users u
     `).all();
 
-    // Compute level, badge, and sort by tie-breaker rules
-    const formatted = rawUsers.map((u) => {
-      const sessions = Number(u.sessions_as_mentor) || 0;
-      const level = calculateLevel(sessions);
-      const badge = getLevelBadge(level);
-      return {
-        id: u.id,
-        name: u.name,
-        handle: u.handle,
-        avatar_color: u.avatar_color,
-        level,
-        badge,
-        sessions_as_mentor: sessions,
-        rating_avg: u.rating_avg !== null ? Number(u.rating_avg) : null,
-        rating_count: Number(u.rating_count) || 0,
-        total_earned: Number(u.total_earned) || 0,
-      };
-    });
+    // Filter to ONLY users with >= 1 completed session as mentor
+    const activeMentors = rawUsers
+      .filter((u) => Number(u.sessions_as_mentor) >= 1)
+      .map((u) => {
+        const sessions = Number(u.sessions_as_mentor);
+        const level = calculateLevel(sessions);
+        const badge = getLevelBadge(level);
+        return {
+          id: u.id,
+          name: u.name,
+          handle: u.handle,
+          avatar_color: u.avatar_color,
+          level,
+          badge,
+          sessions_as_mentor: sessions,
+          rating_avg: u.rating_avg !== null ? Number(u.rating_avg) : null,
+          rating_count: Number(u.rating_count) || 0,
+          total_earned: Number(u.total_earned) || 0,
+        };
+      });
 
     // Rank tie-breakers:
     // 1. sessions_as_mentor DESC
     // 2. rating_avg DESC (nulls last)
     // 3. total_earned DESC
     // 4. name ASC (deterministic)
-    formatted.sort((a, b) => {
+    activeMentors.sort((a, b) => {
       if (b.sessions_as_mentor !== a.sessions_as_mentor) {
         return b.sessions_as_mentor - a.sessions_as_mentor;
       }
@@ -92,7 +94,7 @@ router.get('/', (req, res) => {
     });
 
     // Assign 1-indexed ranks
-    const ranked = formatted.map((u, idx) => ({
+    const ranked = activeMentors.map((u, idx) => ({
       rank: idx + 1,
       ...u,
     }));
@@ -103,7 +105,8 @@ router.get('/', (req, res) => {
     res.json({
       leaderboard: top10,
       my_rank: myEntry ? { ...myEntry } : null,
-      total_helpers: ranked.filter((u) => u.sessions_as_mentor > 0).length,
+      total_mentors: ranked.length,
+      total_helpers: ranked.length, // backwards-compatible alias
     });
   } catch (err) {
     console.error('Error in GET /api/leaderboard:', err);
