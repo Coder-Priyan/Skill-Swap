@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 export default function PeerCard({ peer, onBookClick }) {
   const getBadgeClass = (level) => {
@@ -28,7 +29,11 @@ export default function PeerCard({ peer, onBookClick }) {
 
         <div className="peer-identity">
           <div className="peer-name-row">
-            <h3 className="peer-name">{peer.name}</h3>
+            <h3 className="peer-name">
+              <Link to={`/users/${peer.id}`} className="peer-name-link" title={`View ${peer.name}'s profile`}>
+                {peer.name}
+              </Link>
+            </h3>
             {peer.is_online && (
               <span className="online-text-tag">Online</span>
             )}

@@ -182,3 +182,53 @@ export function cancelBooking(id) {
     method: 'POST',
   });
 }
+
+/**
+ * GET /api/ledger/:userId
+ * @param {string} userId
+ * @param {object} [params]
+ */
+export function getLedger(userId, { kind, limit = 50, offset = 0 } = {}) {
+  const searchParams = new URLSearchParams();
+  if (kind) searchParams.append('kind', kind);
+  if (limit !== undefined) searchParams.append('limit', limit);
+  if (offset !== undefined) searchParams.append('offset', offset);
+  const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+  return apiRequest(`/api/ledger/${userId}${query}`);
+}
+
+/**
+ * Downloads ledger as CSV with X-User-Id auth header
+ * @param {string} userId
+ * @param {object} [params]
+ */
+export async function downloadLedgerCsv(userId, { kind } = {}) {
+  const currentUserId = getCurrentUserId();
+  const searchParams = new URLSearchParams();
+  if (kind) searchParams.append('kind', kind);
+  const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+
+  const headers = {};
+  if (currentUserId) {
+    headers['X-User-Id'] = currentUserId;
+  }
+
+  const res = await fetch(`/api/ledger/${userId}/export.csv${query}`, {
+    headers,
+  });
+
+  if (!res.ok) {
+    throw new Error('Failed to download ledger CSV');
+  }
+
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ledger-${userId}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+}
+

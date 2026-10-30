@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import usersRoutes from './routes/users.js';
 import peersRoutes, { getMetaHandler } from './routes/peers.js';
 import bookingsRoutes from './routes/bookings.js';
+import ledgerRoutes from './routes/ledger.js';
 import { initSockets } from './sockets.js';
 
 dotenv.config();
@@ -41,16 +42,21 @@ app.use('/api/peers', peersRoutes);
 // Mount bookings routes (Slice 3)
 app.use('/api/bookings', bookingsRoutes);
 
+// Mount ledger routes (Slice 4)
+app.use('/api/ledger', ledgerRoutes);
+
 // 404 handler for API routes
 app.use('/api/*', (req, res) => {
   res.status(404).json({ error: `Endpoint not found: ${req.method} ${req.originalUrl}` });
 });
 
-// Start listening
-server.listen(PORT, () => {
-  console.log(`🚀 SkillSwap Server running at http://localhost:${PORT}`);
-  console.log(`   Health: http://localhost:${PORT}/api/health`);
-  console.log(`   Users:  http://localhost:${PORT}/api/users`);
-});
+// Start listening if not in test environment
+if (process.env.NODE_ENV !== 'test') {
+  server.listen(PORT, () => {
+    console.log(`🚀 SkillSwap Server running at http://localhost:${PORT}`);
+    console.log(`   Health: http://localhost:${PORT}/api/health`);
+    console.log(`   Users:  http://localhost:${PORT}/api/users`);
+  });
+}
 
 export { app, server };

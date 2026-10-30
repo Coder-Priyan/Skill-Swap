@@ -303,6 +303,7 @@ export default function App() {
             />
             <Route path="/profile" element={<Profile currentProfile={currentProfile} />} />
             <Route path="/profile/:id" element={<Profile currentProfile={currentProfile} />} />
+            <Route path="/users/:id" element={<Profile currentProfile={currentProfile} />} />
             <Route path="/room/:roomId" element={<Room />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/audit" element={<Audit />} />

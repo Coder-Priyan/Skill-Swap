@@ -1,7 +1,7 @@
 import express from 'express';
 import { db } from '../db.js';
 import { getUserBalance, getUserAvailableCredits, getUserReservedCredits } from '../ledger.js';
-import { calculateLevel, getLevelBadge, calculateBadges } from '../config.js';
+import { calculateLevel, getLevelBadge, calculateBadges, getLevelProgress, getBadgeDetails } from '../config.js';
 
 const router = express.Router();
 
@@ -117,7 +117,7 @@ router.get('/:id', validateUserHeader, (req, res) => {
     const acceptedBookings = db.prepare(`
       SELECT COUNT(*) AS count 
       FROM bookings 
-      WHERE mentor_id = ? AND status IN ('accepted', 'in_progress', 'completed')
+      WHERE mentor_id = ? AND accepted_at IS NOT NULL
     `).get(id).count;
 
     const ratingRow = db.prepare(`
@@ -132,15 +132,26 @@ router.get('/:id', validateUserHeader, (req, res) => {
       WHERE user_id = ? AND kind IN ('session_earn', 'bonus')
     `).get(id).total;
 
+    const totalCreditsSpent = db.prepare(`
+      SELECT COALESCE(SUM(ABS(delta)), 0) AS total 
+      FROM ledger_entries 
+      WHERE user_id = ? AND kind = 'session_spend'
+    `).get(id).total;
+
     // Credit calculations via ledger.js (Section 4)
     const balance = getUserBalance(id);
     const reservedCredits = getUserReservedCredits(id);
     const availableCredits = getUserAvailableCredits(id);
 
-    // Level and badge rules (Section 5)
+    // Level and badge rules (Section 5 & Slice 4)
     const level = calculateLevel(mentorSessions);
     const badge = getLevelBadge(level);
     const badges = calculateBadges({
+      mentorSessionsCompleted: mentorSessions,
+      acceptedBookingsCount: acceptedBookings,
+    });
+    const levelProgress = getLevelProgress(mentorSessions);
+    const badgeDetails = getBadgeDetails({
       mentorSessionsCompleted: mentorSessions,
       acceptedBookingsCount: acceptedBookings,
     });
@@ -161,6 +172,8 @@ router.get('/:id', validateUserHeader, (req, res) => {
       level,
       badge,
       badges,
+      level_progress: levelProgress,
+      badge_details: badgeDetails,
       skills,
       slots,
       stats: {
@@ -168,6 +181,7 @@ router.get('/:id', validateUserHeader, (req, res) => {
         sessions_completed_as_learner: learnerSessions,
         total_sessions_completed: mentorSessions + learnerSessions,
         total_credits_earned: totalCreditsEarned,
+        total_credits_spent: totalCreditsSpent,
         rating_avg: ratingRow.avg_rating ? Math.round(ratingRow.avg_rating * 10) / 10 : null,
         rating_count: ratingRow.rating_count || 0,
       },
