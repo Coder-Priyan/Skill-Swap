@@ -151,7 +151,7 @@ export default function App() {
 
         {!loading && !error && (
           <Routes>
-            <Route path="/" element={<Directory />} />
+            <Route path="/" element={<Directory currentUserId={currentUserId} currentProfile={currentProfile} />} />
             <Route path="/bookings" element={<Bookings />} />
             <Route path="/profile" element={<Profile currentProfile={currentProfile} />} />
             <Route path="/profile/:id" element={<Profile currentProfile={currentProfile} />} />

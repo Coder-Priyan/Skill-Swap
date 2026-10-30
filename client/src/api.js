@@ -98,3 +98,32 @@ export function getUsers() {
 export function getUserProfile(id) {
   return apiRequest(`/api/users/${id}`);
 }
+
+/**
+ * GET /api/meta
+ * Fetches dynamic filter options from the database.
+ */
+export function getMeta() {
+  return apiRequest('/api/meta');
+}
+
+/**
+ * GET /api/peers
+ * Fetches peer directory with search, filters, and current user eligibility.
+ * 
+ * @param {object} params
+ * @param {AbortSignal} [signal]
+ */
+export function getPeers(params = {}, signal = null) {
+  const searchParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== '') {
+      searchParams.append(key, value);
+    }
+  }
+
+  const queryString = searchParams.toString();
+  const endpoint = queryString ? `/api/peers?${queryString}` : '/api/peers';
+  return apiRequest(endpoint, { signal });
+}
+

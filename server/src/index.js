@@ -3,6 +3,7 @@ import http from 'http';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import usersRoutes from './routes/users.js';
+import peersRoutes, { getMetaHandler } from './routes/peers.js';
 
 dotenv.config();
 
@@ -27,6 +28,10 @@ app.get('/api/health', (req, res) => {
 
 // Mount user routes
 app.use('/api/users', usersRoutes);
+
+// Mount directory metadata and peers routes (Slice 2)
+app.get('/api/meta', getMetaHandler);
+app.use('/api/peers', peersRoutes);
 
 // 404 handler for API routes
 app.use('/api/*', (req, res) => {
