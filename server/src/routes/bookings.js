@@ -10,7 +10,7 @@ import {
   getBookings,
   getBookingsSummary,
 } from '../bookings.js';
-import { settleBooking } from '../ledger.js';
+import { settleBooking, rateBooking } from '../ledger.js';
 import { emitToUser, emitToRoom } from '../sockets.js';
 import { snapshotAndCloseRoom } from '../yjs.js';
 
@@ -378,10 +378,127 @@ router.get('/:id/notes', (req, res) => {
       });
     }
 
-    res.json(note);
+    return res.json(note);
   } catch (err) {
     const status = err.status || 500;
     res.status(status).json({ error: err.message || 'Failed to retrieve notes' });
+  }
+});
+
+/**
+ * POST /api/bookings/:id/rate
+ * Learner rates a completed booking (1-5 stars, optional comment)
+ * Awards +1 bonus credit to mentor if rating is 5
+ */
+router.post('/:id/rate', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rating, comment } = req.body || {};
+
+    const result = rateBooking(id, req.currentUserId, rating, comment, db);
+
+    // After commit, emit socket events
+    const learner = db.prepare('SELECT name FROM users WHERE id = ?').get(req.currentUserId);
+    const learnerName = learner ? learner.name : 'Learner';
+
+    // booking:rated to mentor
+    emitToUser(result.booking.mentor_id, 'booking:rated', {
+      bookingId: result.booking.id,
+      rating: result.booking.rating,
+      comment: result.booking.rating_comment,
+      bonusPaid: result.bonusPaid,
+      learnerName,
+      message: result.bonusPaid
+        ? `${learnerName} rated you 5 stars (+1 bonus credit)`
+        : `${learnerName} rated your session ${result.booking.rating} stars`,
+    });
+
+    // ledger:updated to mentor if bonus paid
+    if (result.bonusPaid) {
+      emitToUser(result.booking.mentor_id, 'ledger:updated', {
+        userId: result.booking.mentor_id,
+        newBalance: result.mentor.new_balance,
+        message: 'Received +1 bonus credit for 5-star mentorship session',
+      });
+    }
+
+    res.json({
+      booking: result.booking,
+      bonusPaid: result.bonusPaid,
+      bonusEntryId: result.bonusEntryId,
+    });
+  } catch (err) {
+    const status = err.status || 500;
+    if (status >= 500) {
+      console.error(`Error in POST /api/bookings/${req.params.id}/rate:`, err);
+    }
+    res.status(status).json({ error: err.message || 'Failed to submit rating' });
+  }
+});
+
+/**
+ * POST /api/bookings/:id/notes
+ * Accepts { summary } (participant only, completed bookings only, max 1000 chars)
+ * Never overwrites final_code or language
+ */
+router.post('/:id/notes', (req, res) => {
+  try {
+    const { id } = req.params;
+    const booking = db.prepare('SELECT id, learner_id, mentor_id, status FROM bookings WHERE id = ?').get(id);
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    if (booking.learner_id !== req.currentUserId && booking.mentor_id !== req.currentUserId) {
+      return res.status(403).json({ error: 'Forbidden: you are not a participant in this booking' });
+    }
+
+    if (booking.status !== 'completed') {
+      return res.status(409).json({ error: `Cannot save notes for booking in status '${booking.status}'; must be completed` });
+    }
+
+    const { summary } = req.body || {};
+    let cleanSummary = null;
+    if (summary !== undefined && summary !== null) {
+      cleanSummary = String(summary).trim();
+      if (cleanSummary.length > 1000) {
+        return res.status(400).json({ error: 'Summary cannot exceed 1000 characters' });
+      }
+      if (cleanSummary.length === 0) {
+        cleanSummary = null;
+      }
+    }
+
+    const existing = db.prepare('SELECT id, final_code, language FROM session_notes WHERE booking_id = ?').get(id);
+    const nowIso = new Date().toISOString();
+
+    if (existing) {
+      db.prepare(`
+        UPDATE session_notes
+        SET summary = ?, saved_at = ?
+        WHERE id = ?
+      `).run(cleanSummary, nowIso, existing.id);
+    } else {
+      const noteId = `not_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      db.prepare(`
+        INSERT INTO session_notes (id, booking_id, summary, final_code, language, saved_at)
+        VALUES (?, ?, ?, '', 'javascript', ?)
+      `).run(noteId, id, cleanSummary, nowIso);
+    }
+
+    const updated = db.prepare(`
+      SELECT id, booking_id, summary, final_code, language, saved_at
+      FROM session_notes
+      WHERE booking_id = ?
+    `).get(id);
+
+    res.json(updated);
+  } catch (err) {
+    const status = err.status || 500;
+    if (status >= 500) {
+      console.error(`Error in POST /api/bookings/${req.params.id}/notes:`, err);
+    }
+    res.status(status).json({ error: err.message || 'Failed to update notes' });
   }
 });
 

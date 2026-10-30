@@ -24,6 +24,7 @@ export default function BookingCard({
   currentUserId,
   onActionSuccess,
   onActionError,
+  onOpenRateModal,
 }) {
   const [loadingAction, setLoadingAction] = useState(null); // 'accept' | 'decline' | 'cancel'
   const [confirmDialog, setConfirmDialog] = useState(null); // 'accept' | 'decline' | 'cancel'
@@ -276,6 +277,42 @@ export default function BookingCard({
                 Join Room 🚀
               </Link>
             </>
+          )}
+
+          {/* Completed Session Actions & Rating Display */}
+          {booking.status === 'completed' && (
+            <div className="completed-actions-group">
+              <Link
+                to={`/sessions/${booking.id}`}
+                className="btn btn-sm btn-secondary btn-notes"
+                title="View session notes and code snapshot"
+              >
+                📝 Notes
+              </Link>
+
+              {booking.rating ? (
+                <div className="booking-card-rating">
+                  <span className="rating-stars-read">
+                    {'⭐'.repeat(booking.rating)}
+                  </span>
+                  <span className="rating-score-pill">{booking.rating}/5</span>
+                  {booking.rating_comment && (
+                    <div className="booking-rating-comment">
+                      "{booking.rating_comment}"
+                    </div>
+                  )}
+                </div>
+              ) : (
+                role === 'learner' && (
+                  <button
+                    className="btn btn-sm btn-primary btn-rate"
+                    onClick={() => onOpenRateModal && onOpenRateModal(booking)}
+                  >
+                    ⭐ Rate
+                  </button>
+                )
+              )}
+            </div>
           )}
         </div>
       </div>

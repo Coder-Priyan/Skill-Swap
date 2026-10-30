@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getBookings, getCurrentUserId } from '../api.js';
 import BookingCard from '../components/BookingCard.jsx';
+import RatingModal from '../components/RatingModal.jsx';
 import { subscribeToSocketEvent } from '../socket.js';
 
 export default function Bookings({ currentUserId, onNavigate, onBookingsChange }) {
@@ -12,6 +13,7 @@ export default function Bookings({ currentUserId, onNavigate, onBookingsChange }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actionMessage, setActionMessage] = useState(null);
+  const [ratingBooking, setRatingBooking] = useState(null);
 
   const fetchAllBookings = useCallback(async () => {
     if (!effectiveUserId) return;
@@ -214,6 +216,7 @@ export default function Bookings({ currentUserId, onNavigate, onBookingsChange }
                 role={currentRole}
                 currentUserId={currentUserId}
                 onActionSuccess={handleActionSuccess}
+                onOpenRateModal={(b) => setRatingBooking(b)}
                 onActionError={(err) => {
                   setError(err);
                   setTimeout(() => setError(null), 4000);
@@ -223,6 +226,20 @@ export default function Bookings({ currentUserId, onNavigate, onBookingsChange }
           </div>
         )}
       </div>
+
+      <RatingModal
+        booking={ratingBooking}
+        isOpen={Boolean(ratingBooking)}
+        onClose={() => setRatingBooking(null)}
+        onSuccess={(res) => {
+          setActionMessage(res.bonusPaid
+            ? `⭐ Rating submitted! +1 bonus credit sent to ${ratingBooking?.mentor?.name || 'mentor'}`
+            : '⭐ Rating submitted successfully!'
+          );
+          setTimeout(() => setActionMessage(null), 5000);
+          fetchAllBookings();
+        }}
+      />
     </div>
   );
 }

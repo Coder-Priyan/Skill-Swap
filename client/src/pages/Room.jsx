@@ -7,6 +7,7 @@ import Editor from '@monaco-editor/react';
 import monaco from '../monacoConfig';
 import { getBooking, startBooking, completeBooking, getCurrentUserId } from '../api';
 import { getSocket, connectSocket } from '../socket';
+import RatingModal from '../components/RatingModal.jsx';
 
 const LANGUAGES = [
   { label: 'JavaScript', value: 'javascript' },
@@ -28,6 +29,7 @@ export default function Room() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sessionEnded, setSessionEnded] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
   const [isReadOnly, setIsReadOnly] = useState(false);
 
   // Settlement & Confirm Modals (Slice 6)
@@ -710,8 +712,21 @@ export default function Room() {
             </div>
             <div className="modal-footer settlement-modal-footer">
               <button
+                className="btn btn-outline btn-notes"
+                onClick={() => navigate(`/sessions/${booking.id}`)}
+              >
+                📝 View notes
+              </button>
+              <button
                 className="btn btn-secondary"
-                onClick={() => navigate('/bookings')}
+                onClick={() => {
+                  if (booking?.learner_id === currentUserId && !booking?.rating) {
+                    setSettlementData(null);
+                    setShowRatingModal(true);
+                  } else {
+                    navigate('/bookings');
+                  }
+                }}
               >
                 Back to My Bookings
               </button>
@@ -725,6 +740,20 @@ export default function Room() {
           </div>
         </div>
       )}
+
+      {/* Post-Session Rating Modal for Learner */}
+      <RatingModal
+        booking={booking}
+        isOpen={showRatingModal}
+        onClose={() => {
+          setShowRatingModal(false);
+          navigate('/bookings');
+        }}
+        onSuccess={() => {
+          setShowRatingModal(false);
+          navigate('/bookings');
+        }}
+      />
     </div>
   );
 }

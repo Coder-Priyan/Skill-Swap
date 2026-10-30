@@ -268,3 +268,47 @@ export async function downloadLedgerCsv(userId, { kind } = {}) {
   window.URL.revokeObjectURL(url);
 }
 
+/**
+ * POST /api/bookings/:id/rate
+ * Rates a completed booking and sends +1 bonus credit to mentor if 5-star
+ * @param {string} id
+ * @param {number} rating 1..5
+ * @param {string|null} [comment]
+ */
+export function rateBooking(id, rating, comment = null) {
+  return apiRequest(`/api/bookings/${id}/rate`, {
+    method: 'POST',
+    body: JSON.stringify({ rating, comment }),
+  });
+}
+
+/**
+ * POST /api/bookings/:id/notes
+ * Saves/updates session notes summary (max 1000 chars)
+ * @param {string} id
+ * @param {string} summary
+ */
+export function updateBookingNotes(id, summary) {
+  return apiRequest(`/api/bookings/${id}/notes`, {
+    method: 'POST',
+    body: JSON.stringify({ summary }),
+  });
+}
+
+/**
+ * GET /api/audit
+ * Whole-system credit conservation and integrity report
+ */
+export function getAudit() {
+  return apiRequest('/api/audit');
+}
+
+/**
+ * GET /api/leaderboard
+ * Top helpers and current user standing
+ */
+export function getLeaderboard() {
+  return apiRequest('/api/leaderboard');
+}
+
+

@@ -6,6 +6,8 @@ import usersRoutes from './routes/users.js';
 import peersRoutes, { getMetaHandler } from './routes/peers.js';
 import bookingsRoutes from './routes/bookings.js';
 import ledgerRoutes from './routes/ledger.js';
+import auditRoutes from './routes/audit.js';
+import leaderboardRoutes from './routes/leaderboard.js';
 import { initSockets } from './sockets.js';
 import { initYjs, getOpenRoomCount } from './yjs.js';
 
@@ -49,6 +51,12 @@ app.use('/api/bookings', bookingsRoutes);
 
 // Mount ledger routes (Slice 4)
 app.use('/api/ledger', ledgerRoutes);
+
+// Mount audit routes (Slice 7)
+app.use('/api/audit', auditRoutes);
+
+// Mount leaderboard routes (Slice 7)
+app.use('/api/leaderboard', leaderboardRoutes);
 
 // 404 handler for API routes
 app.use('/api/*', (req, res) => {

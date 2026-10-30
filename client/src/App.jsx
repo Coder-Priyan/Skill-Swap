@@ -1,20 +1,35 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Routes, Route, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, NavLink, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { getUsers, getUserProfile, getCurrentUserId, setCurrentUserId, getBookingsSummary } from './api';
 import { connectSocket, subscribeToSocketEvent, disconnectSocket } from './socket';
 import UserSwitcher from './components/UserSwitcher';
 import Toasts from './components/Toasts';
+import ErrorBoundary from './components/ErrorBoundary';
 import Directory from './pages/Directory';
 import Bookings from './pages/Bookings';
 import Profile from './pages/Profile';
 import Leaderboard from './pages/Leaderboard';
 import Audit from './pages/Audit';
+import NotFound from './pages/NotFound';
 
-// Lazy-load Room page to keep main bundle light (Slice 5)
+// Lazy-load heavy Monaco editor pages to keep main bundle fast (Slice 5 & 7)
 const Room = React.lazy(() => import('./pages/Room'));
+const SessionNotes = React.lazy(() => import('./pages/SessionNotes'));
+
+function SessionNotesWrapper({ currentProfile, onNavigate }) {
+  const { bookingId } = useParams();
+  return (
+    <SessionNotes
+      bookingId={bookingId}
+      currentUser={currentProfile}
+      onBack={() => onNavigate('/bookings')}
+    />
+  );
+}
 
 export default function App() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [users, setUsers] = useState([]);
   const [currentUserId, setCurrentUserIdState] = useState(getCurrentUserId());
   const [currentProfile, setCurrentProfile] = useState(null);
@@ -22,6 +37,20 @@ export default function App() {
   const [toasts, setToasts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Dynamic document title update per route (Slice 7 polish)
+  useEffect(() => {
+    const path = location.pathname;
+    let title = 'SkillSwap — Micro-Mentorship Hub';
+    if (path === '/') title = 'SkillSwap | Find Mentors & Peers';
+    else if (path.startsWith('/bookings')) title = 'SkillSwap | My Bookings';
+    else if (path.startsWith('/profile') || path.startsWith('/users')) title = 'SkillSwap | Profile & Ledger';
+    else if (path.startsWith('/leaderboard')) title = 'SkillSwap | Community Leaderboard';
+    else if (path.startsWith('/audit')) title = 'SkillSwap | Ledger Audit & Conservation Proof';
+    else if (path.startsWith('/room')) title = 'SkillSwap | Live Pairing Room';
+    else if (path.startsWith('/sessions')) title = 'SkillSwap | Session Notes Archive';
+    document.title = title;
+  }, [location]);
 
   // Toast manager
   const addToast = useCallback((toast) => {
@@ -176,6 +205,17 @@ export default function App() {
       refreshAllUserData();
     });
 
+    const unsubRated = subscribeToSocketEvent('booking:rated', (data) => {
+      addToast({
+        type: 'success',
+        title: 'Session Rated! ⭐',
+        message: data.message || `${data.learnerName || 'Your learner'} rated the session ${data.rating} stars!`,
+        link: `/sessions/${data.bookingId}`,
+        actionText: 'View notes',
+      });
+      refreshAllUserData();
+    });
+
     return () => {
       unsubReq();
       unsubAcc();
@@ -184,6 +224,7 @@ export default function App() {
       unsubStarted();
       unsubLedger();
       unsubEnded();
+      unsubRated();
     };
   }, [addToast, refreshAllUserData]);
 
@@ -339,35 +380,74 @@ export default function App() {
             <Route
               path="/room/:bookingId"
               element={
-                <React.Suspense
-                  fallback={
-                    <div className="loading-box">
-                      <div className="spinner" />
-                      <p>Loading session room...</p>
-                    </div>
-                  }
-                >
-                  <Room />
-                </React.Suspense>
+                <ErrorBoundary onRetry={() => window.location.reload()}>
+                  <React.Suspense
+                    fallback={
+                      <div className="loading-box">
+                        <div className="spinner" />
+                        <p>Loading session room...</p>
+                      </div>
+                    }
+                  >
+                    <Room />
+                  </React.Suspense>
+                </ErrorBoundary>
               }
             />
             <Route
               path="/room/:bookingId/:roomId"
               element={
-                <React.Suspense
-                  fallback={
-                    <div className="loading-box">
-                      <div className="spinner" />
-                      <p>Loading session room...</p>
-                    </div>
-                  }
-                >
-                  <Room />
-                </React.Suspense>
+                <ErrorBoundary onRetry={() => window.location.reload()}>
+                  <React.Suspense
+                    fallback={
+                      <div className="loading-box">
+                        <div className="spinner" />
+                        <p>Loading session room...</p>
+                      </div>
+                    }
+                  >
+                    <Room />
+                  </React.Suspense>
+                </ErrorBoundary>
               }
             />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/audit" element={<Audit />} />
+            <Route
+              path="/sessions/:bookingId"
+              element={
+                <ErrorBoundary onRetry={() => window.location.reload()}>
+                  <React.Suspense
+                    fallback={
+                      <div className="loading-box">
+                        <div className="spinner" />
+                        <p>Loading session notes archive...</p>
+                      </div>
+                    }
+                  >
+                    <SessionNotesWrapper
+                      currentProfile={currentProfile}
+                      onNavigate={(path) => navigate(path)}
+                    />
+                  </React.Suspense>
+                </ErrorBoundary>
+              }
+            />
+            <Route
+              path="/leaderboard"
+              element={
+                <Leaderboard
+                  currentUser={currentProfile}
+                  onSelectPeer={(id) => navigate(`/profile/${id}`)}
+                />
+              }
+            />
+            <Route
+              path="/audit"
+              element={<Audit currentUser={currentProfile} />}
+            />
+            <Route
+              path="*"
+              element={<NotFound onNavigateHome={() => navigate('/')} />}
+            />
           </Routes>
         )}
       </main>
