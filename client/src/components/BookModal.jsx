@@ -1,21 +1,49 @@
 import React, { useState } from 'react';
+import { createBooking } from '../api.js';
 
 export default function BookModal({ peer, currentProfile, onClose, onBookSuccess }) {
-  const [selectedTopic, setSelectedTopic] = useState(peer.skills[0] || '');
+  const [selectedTopic, setSelectedTopic] = useState(peer.skills?.[0] || '');
   const [problemNote, setProblemNote] = useState('');
   const [selectedSlot, setSelectedSlot] = useState(
-    peer.slots[0] ? `slt_${peer.slots[0].id}` : ''
+    peer.slots?.[0] ? peer.slots[0].id : ''
   );
-  const [toastMessage, setToastMessage] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(null);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // SPEC.md Slice 2: "Its Submit button shows a toast 'Booking goes live in the next slice' and does not call any API."
-    setToastMessage('Booking goes live in the next slice');
-    setTimeout(() => {
-      setToastMessage(null);
-      if (onClose) onClose();
-    }, 2000);
+    setErrorMessage(null);
+
+    if (!problemNote || problemNote.trim().length < 10) {
+      setErrorMessage('Please describe your problem or goal in at least 10 characters.');
+      return;
+    }
+
+    if (!selectedSlot) {
+      setErrorMessage('Please select an availability time slot.');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const booking = await createBooking({
+        mentorId: peer.id,
+        topic: selectedTopic,
+        problemNote: problemNote.trim(),
+        slotId: selectedSlot,
+      });
+
+      if (onBookSuccess) {
+        onBookSuccess(booking);
+      }
+      if (onClose) {
+        onClose();
+      }
+    } catch (err) {
+      setErrorMessage(err.message || 'Failed to submit booking request');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -33,9 +61,9 @@ export default function BookModal({ peer, currentProfile, onClose, onBookSuccess
           </button>
         </div>
 
-        {toastMessage && (
-          <div className="modal-toast-banner">
-            🚀 {toastMessage}
+        {errorMessage && (
+          <div className="modal-error-banner" role="alert">
+            ⚠️ {errorMessage}
           </div>
         )}
 
@@ -50,7 +78,7 @@ export default function BookModal({ peer, currentProfile, onClose, onBookSuccess
               onChange={(e) => setSelectedTopic(e.target.value)}
               required
             >
-              {peer.skills.map((skill) => (
+              {peer.skills?.map((skill) => (
                 <option key={skill} value={skill}>
                   {skill}
                 </option>
@@ -61,7 +89,7 @@ export default function BookModal({ peer, currentProfile, onClose, onBookSuccess
           {/* Problem Note Textarea */}
           <div className="form-group">
             <label className="form-label" htmlFor="booking-problem">
-              What do you need help with?
+              What do you need help with? <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>(min 10 characters)</span>
             </label>
             <textarea
               id="booking-problem"
@@ -71,13 +99,18 @@ export default function BookModal({ peer, currentProfile, onClose, onBookSuccess
               value={problemNote}
               onChange={(e) => setProblemNote(e.target.value)}
               required
+              minLength={10}
+              maxLength={500}
             />
+            <div style={{ textAlign: 'right', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+              {problemNote.length}/500 chars
+            </div>
           </div>
 
           {/* Slot Choice from Mentor's Slots */}
           <div className="form-group">
             <label className="form-label" htmlFor="booking-slot">Choose an availability window</label>
-            {peer.slots.length === 0 ? (
+            {(!peer.slots || peer.slots.length === 0) ? (
               <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                 Mentor has no listed time slots.
               </p>
@@ -90,7 +123,7 @@ export default function BookModal({ peer, currentProfile, onClose, onBookSuccess
                 required
               >
                 {peer.slots.map((s) => (
-                  <option key={s.id} value={`slt_${s.id}`}>
+                  <option key={s.id} value={s.id}>
                     {dayNames[s.day_of_week]}: {s.start_hour}:00 - {s.end_hour}:00
                   </option>
                 ))}
@@ -113,15 +146,15 @@ export default function BookModal({ peer, currentProfile, onClose, onBookSuccess
           </div>
 
           <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
+            <button type="button" className="btn btn-secondary" onClick={onClose} disabled={submitting}>
               Cancel
             </button>
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={Boolean(toastMessage)}
+              disabled={submitting || (!peer.slots || peer.slots.length === 0)}
             >
-              Confirm Booking
+              {submitting ? 'Submitting Request...' : 'Confirm Booking'}
             </button>
           </div>
         </form>

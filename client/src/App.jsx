@@ -1,7 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Routes, Route, NavLink, useNavigate } from 'react-router-dom';
-import { getUsers, getUserProfile, getCurrentUserId, setCurrentUserId } from './api';
+import { getUsers, getUserProfile, getCurrentUserId, setCurrentUserId, getBookingsSummary } from './api';
+import { connectSocket, subscribeToSocketEvent, disconnectSocket } from './socket';
 import UserSwitcher from './components/UserSwitcher';
+import Toasts from './components/Toasts';
 import Directory from './pages/Directory';
 import Bookings from './pages/Bookings';
 import Profile from './pages/Profile';
@@ -10,11 +12,59 @@ import Leaderboard from './pages/Leaderboard';
 import Audit from './pages/Audit';
 
 export default function App() {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [currentUserId, setCurrentUserIdState] = useState(getCurrentUserId());
   const [currentProfile, setCurrentProfile] = useState(null);
+  const [bookingsSummary, setBookingsSummary] = useState(null);
+  const [toasts, setToasts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Toast manager
+  const addToast = useCallback((toast) => {
+    const id = `toast_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    const newToast = { id, ...toast };
+    setToasts((prev) => [...prev, newToast]);
+
+    // Auto-dismiss after 6 seconds
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 6000);
+  }, []);
+
+  const dismissToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  // Fetch bookings summary for nav badge
+  const refreshSummary = useCallback(async () => {
+    try {
+      const summary = await getBookingsSummary();
+      setBookingsSummary(summary);
+    } catch (err) {
+      // ignore unauthenticated or background errors
+    }
+  }, []);
+
+  // Fetch active user profile
+  const fetchActiveUserProfile = useCallback(async (userId) => {
+    if (!userId) return;
+    try {
+      const profile = await getUserProfile(userId);
+      setCurrentProfile(profile);
+    } catch (err) {
+      console.error('Failed to load profile for user:', userId, err);
+    }
+  }, []);
+
+  // Refresh both profile and summary
+  const refreshAllUserData = useCallback(() => {
+    if (currentUserId) {
+      fetchActiveUserProfile(currentUserId);
+      refreshSummary();
+    }
+  }, [currentUserId, fetchActiveUserProfile, refreshSummary]);
 
   // Load all users on mount
   useEffect(() => {
@@ -36,23 +86,74 @@ export default function App() {
       });
   }, []);
 
-  // Fetch full user profile whenever currentUserId changes
-  const fetchActiveUserProfile = useCallback((userId) => {
-    if (!userId) return;
-    getUserProfile(userId)
-      .then((profile) => {
-        setCurrentProfile(profile);
-      })
-      .catch((err) => {
-        console.error('Failed to load profile for user:', userId, err);
-      });
-  }, []);
-
+  // Connect socket and fetch data when currentUserId changes
   useEffect(() => {
     if (currentUserId) {
       fetchActiveUserProfile(currentUserId);
+      refreshSummary();
+      connectSocket(currentUserId);
     }
-  }, [currentUserId, fetchActiveUserProfile]);
+    return () => {
+      // do not disconnect on re-renders, socket manager handles user switches
+    };
+  }, [currentUserId, fetchActiveUserProfile, refreshSummary]);
+
+  // Listen for real-time socket events
+  useEffect(() => {
+    const unsubReq = subscribeToSocketEvent('booking:requested', (data) => {
+      addToast({
+        type: 'request',
+        title: 'New Booking Request',
+        message: `${data.booking?.learner?.name || 'A learner'} requested session: "${data.booking?.topic}"`,
+        link: '/bookings',
+        actionText: 'View requests',
+      });
+      refreshAllUserData();
+    });
+
+    const unsubAcc = subscribeToSocketEvent('booking:accepted', (data) => {
+      addToast({
+        type: 'accepted',
+        title: 'Session Accepted! 🎉',
+        message: `${data.booking?.mentor?.name || 'Your mentor'} accepted your booking for "${data.booking?.topic}"`,
+        link: '/bookings',
+        actionText: 'View booking',
+      });
+      refreshAllUserData();
+    });
+
+    const unsubDec = subscribeToSocketEvent('booking:declined', (data) => {
+      addToast({
+        type: 'declined',
+        title: 'Session Declined',
+        message: `${data.booking?.mentor?.name || 'Your mentor'} was unable to accept "${data.booking?.topic}"`,
+        link: '/bookings',
+      });
+      refreshAllUserData();
+    });
+
+    const unsubCan = subscribeToSocketEvent('booking:cancelled', (data) => {
+      addToast({
+        type: 'cancelled',
+        title: 'Session Cancelled',
+        message: `Booking for "${data.booking?.topic}" was cancelled (${data.booking?.cancelled_by ? `by ${data.booking.cancelled_by}` : ''})`,
+        link: '/bookings',
+      });
+      refreshAllUserData();
+    });
+
+    const unsubLedger = subscribeToSocketEvent('ledger:updated', () => {
+      refreshAllUserData();
+    });
+
+    return () => {
+      unsubReq();
+      unsubAcc();
+      unsubDec();
+      unsubCan();
+      unsubLedger();
+    };
+  }, [addToast, refreshAllUserData]);
 
   const handleUserSwitch = (newUserId) => {
     setCurrentUserIdState(newUserId);
@@ -64,8 +165,17 @@ export default function App() {
     return 'badge-level-1';
   };
 
+  const pendingMentorCount = bookingsSummary?.pending_mentor || 0;
+
   return (
     <div className="app-container">
+      {/* Toast Notification Stack */}
+      <Toasts
+        toasts={toasts}
+        onDismiss={dismissToast}
+        onNavigate={(path) => navigate(path)}
+      />
+
       {/* Top bar / App Shell */}
       <header className="topbar">
         <div className="topbar-left">
@@ -83,7 +193,12 @@ export default function App() {
               </li>
               <li>
                 <NavLink to="/bookings" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                  My Bookings
+                  <span>My Bookings</span>
+                  {pendingMentorCount > 0 && (
+                    <span className="nav-badge-count" title={`${pendingMentorCount} pending mentor requests`}>
+                      {pendingMentorCount}
+                    </span>
+                  )}
                 </NavLink>
               </li>
               <li>
@@ -108,10 +223,17 @@ export default function App() {
         <div className="topbar-right">
           {/* Credit balance chip from GET /api/users/:id */}
           {currentProfile && (
-            <div className="balance-chip" title={`Total balance: ${currentProfile.balance} cr | Available: ${currentProfile.available_credits} cr`}>
+            <div
+              className={`balance-chip ${currentProfile.reserved_credits > 0 ? 'has-reserved' : ''}`}
+              title={`Total balance: ${currentProfile.balance} cr | Available: ${currentProfile.available_credits} cr | Reserved: ${currentProfile.reserved_credits || 0} cr`}
+            >
               <span className="balance-icon">🪙</span>
-              <span className="balance-amount">{currentProfile.balance}</span>
-              <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>cr</span>
+              <span className="balance-amount">{currentProfile.balance} cr</span>
+              {currentProfile.reserved_credits > 0 && (
+                <span className="balance-reserved-chip">
+                  ({currentProfile.reserved_credits} reserved)
+                </span>
+              )}
             </div>
           )}
 
@@ -151,8 +273,34 @@ export default function App() {
 
         {!loading && !error && (
           <Routes>
-            <Route path="/" element={<Directory currentUserId={currentUserId} currentProfile={currentProfile} />} />
-            <Route path="/bookings" element={<Bookings />} />
+            <Route
+              path="/"
+              element={
+                <Directory
+                  currentUserId={currentUserId}
+                  currentProfile={currentProfile}
+                  onBookingCreated={(booking) => {
+                    addToast({
+                      type: 'success',
+                      title: 'Request Sent! 🚀',
+                      message: `Booking request sent to ${booking.mentor?.name || 'mentor'}!`,
+                      link: '/bookings',
+                    });
+                    refreshAllUserData();
+                  }}
+                />
+              }
+            />
+            <Route
+              path="/bookings"
+              element={
+                <Bookings
+                  currentUserId={currentUserId}
+                  onNavigate={(path) => navigate(path)}
+                  onBookingsChange={refreshAllUserData}
+                />
+              }
+            />
             <Route path="/profile" element={<Profile currentProfile={currentProfile} />} />
             <Route path="/profile/:id" element={<Profile currentProfile={currentProfile} />} />
             <Route path="/room/:roomId" element={<Room />} />

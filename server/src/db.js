@@ -152,6 +152,7 @@ export function initSchemaForDb(targetDb) {
       completed_at TEXT,
       rating INTEGER,
       rating_comment TEXT,
+      cancelled_by TEXT, -- nullable: learner | mentor
       FOREIGN KEY (learner_id) REFERENCES users(id),
       FOREIGN KEY (mentor_id) REFERENCES users(id)
     );
@@ -190,6 +191,13 @@ export function initSchemaForDb(targetDb) {
       ON ledger_entries(booking_id, kind) 
       WHERE booking_id IS NOT NULL;
   `);
+
+  // Migration for cancelled_by column if table already existed
+  try {
+    targetDb.exec('ALTER TABLE bookings ADD COLUMN cancelled_by TEXT;');
+  } catch {
+    // Column already exists
+  }
 }
 
 // Initialize default app database

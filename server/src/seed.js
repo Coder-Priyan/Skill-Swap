@@ -1,14 +1,14 @@
-import { db, initSchema } from './db.js';
+import { db as defaultDb, initSchemaForDb } from './db.js';
 import { STARTING_CREDITS, SESSION_COST } from './config.js';
 
-export function runSeed() {
+export function runSeed(targetDb = defaultDb) {
   console.log('🌱 Starting deterministic database seed for SkillSwap...');
 
   // Ensure tables and indexes are initialized
-  initSchema();
+  initSchemaForDb(targetDb);
 
   // Wipe all existing data in proper dependency order
-  db.exec(`
+  targetDb.exec(`
     DELETE FROM session_notes;
     DELETE FROM ledger_entries;
     DELETE FROM bookings;
@@ -252,33 +252,33 @@ export function runSeed() {
   ];
 
   // Prepared statements for insertion
-  const insertUser = db.prepare(`
+  const insertUser = targetDb.prepare(`
     INSERT INTO users (id, name, handle, avatar_color, bio, experience, languages, is_online, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
-  const insertSkill = db.prepare(`
+  const insertSkill = targetDb.prepare(`
     INSERT INTO user_skills (id, user_id, topic)
     VALUES (?, ?, ?)
   `);
 
-  const insertSlot = db.prepare(`
+  const insertSlot = targetDb.prepare(`
     INSERT INTO availability_slots (id, user_id, day_of_week, start_hour, end_hour)
     VALUES (?, ?, ?, ?, ?)
   `);
 
-  const insertLedger = db.prepare(`
+  const insertLedger = targetDb.prepare(`
     INSERT INTO ledger_entries (id, user_id, delta, kind, reason, booking_id, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
 
-  const insertBooking = db.prepare(`
+  const insertBooking = targetDb.prepare(`
     INSERT INTO bookings (id, learner_id, mentor_id, topic, problem_note, slot_label, status, cost, room_id, requested_at, accepted_at, started_at, completed_at, rating, rating_comment)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   // Insert users, skills, slots, and starting grants
-  const seedTransaction = db.transaction(() => {
+  const seedTransaction = targetDb.transaction(() => {
     let skillCount = 0;
     let slotCount = 0;
 
@@ -429,10 +429,10 @@ export function runSeed() {
   seedTransaction();
 
   // Validate seed numbers and print summary
-  const userCount = db.prepare('SELECT COUNT(*) AS count FROM users').get().count;
-  const bookingCount = db.prepare('SELECT COUNT(*) AS count FROM bookings').get().count;
-  const ledgerCount = db.prepare('SELECT COUNT(*) AS count FROM ledger_entries').get().count;
-  const totalDelta = db.prepare('SELECT SUM(delta) AS sum FROM ledger_entries').get().sum;
+  const userCount = targetDb.prepare('SELECT COUNT(*) AS count FROM users').get().count;
+  const bookingCount = targetDb.prepare('SELECT COUNT(*) AS count FROM bookings').get().count;
+  const ledgerCount = targetDb.prepare('SELECT COUNT(*) AS count FROM ledger_entries').get().count;
+  const totalDelta = targetDb.prepare('SELECT SUM(delta) AS sum FROM ledger_entries').get().sum;
 
   console.log('✅ Seed completed successfully:');
   console.log(`   - Users: ${userCount}`);

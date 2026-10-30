@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { getMeta, getPeers } from '../api';
 import PeerCard from '../components/PeerCard';
 import BookModal from '../components/BookModal';
+import { subscribeToSocketEvent } from '../socket';
 
-export default function Directory({ currentUserId, currentProfile }) {
+export default function Directory({ currentUserId, currentProfile, onBookingCreated }) {
   // Metadata state from /api/meta
   const [meta, setMeta] = useState(null);
   const [metaLoading, setMetaLoading] = useState(true);
@@ -103,6 +104,21 @@ export default function Directory({ currentUserId, currentProfile }) {
 
   useEffect(() => {
     fetchPeers();
+  }, [fetchPeers]);
+
+  // Re-fetch peers when booking status changes to keep eligibility current
+  useEffect(() => {
+    const unsubReq = subscribeToSocketEvent('booking:requested', () => fetchPeers());
+    const unsubAcc = subscribeToSocketEvent('booking:accepted', () => fetchPeers());
+    const unsubDec = subscribeToSocketEvent('booking:declined', () => fetchPeers());
+    const unsubCan = subscribeToSocketEvent('booking:cancelled', () => fetchPeers());
+
+    return () => {
+      unsubReq();
+      unsubAcc();
+      unsubDec();
+      unsubCan();
+    };
   }, [fetchPeers]);
 
   // Clear all filters handler
@@ -376,6 +392,10 @@ export default function Directory({ currentUserId, currentProfile }) {
           peer={bookingPeer}
           currentProfile={currentProfile}
           onClose={() => setBookingPeer(null)}
+          onBookSuccess={(b) => {
+            fetchPeers();
+            if (onBookingCreated) onBookingCreated(b);
+          }}
         />
       )}
     </div>

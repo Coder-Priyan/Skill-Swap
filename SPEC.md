@@ -80,7 +80,7 @@ The "current user" is sent in header `X-User-Id` (no login; see User Switcher). 
 - `GET /users` — list users (summary)
 - `GET /users/:id` — profile: balance, available credits, level, badge(s), skills, languages, slots, stats
 - `GET /peers?q=&topic=&language=&day=&daypart=&onlineNow=&minLevel=` — directory search/filter. Results include level, skills, languages, availability, rating average. Excludes the current user. Case-insensitive, partial match on q (name, skills, bio).
-- `POST /bookings` { mentorId, topic, problemNote, slotLabel } — creates `requested`. Validates: not self, mentor exists, learner available credits >= cost, mentor level >= learner level.
+- `POST /bookings` { mentorId, topic, problemNote, slotId } — creates `requested`. Validates: not self, mentor exists, topic in mentor's skills, problemNote 10-500 chars, slotId belongs to mentor (server stores readable slot_label), learner available credits >= cost, mentor level >= learner level, no duplicate open request.
 - `GET /bookings?role=learner|mentor` — current user's bookings
 - `POST /bookings/:id/accept` (mentor only) — re-checks learner available credits; sets `accepted`, creates room_id
 - `POST /bookings/:id/decline` (mentor only), `POST /bookings/:id/cancel` (learner, only before in_progress)
@@ -151,3 +151,11 @@ Show green/red checks plus the numbers. This is what we show judges to prove the
 - No console errors in browser or server.
 - Only the current slice's scope was built; nothing from later slices was half-started.
 - A review report is returned (format defined in each prompt).
+
+## 15. Decisions log
+- **node:sqlite fallback**: When `better-sqlite3` native compilation/prebuilt binaries are unavailable (such as offline environments or machines without C++ build tools), the database engine seamlessly falls back to Node 22's native synchronous `node:sqlite` (`DatabaseSync`) with an identical synchronous interface and `SAVEPOINT`-based nested transaction support.
+- **Booking level rule**: `mentor.level >= learner.level` is enforced during booking creation and peer eligibility checking.
+- **Booking payload**: `POST /bookings` accepts `{ mentorId, topic, problemNote, slotId }`, and the server resolves and stores the human-readable `slot_label`.
+- **Cancelled by column**: A nullable `cancelled_by TEXT` column is tracked on `bookings` to record whether the learner or mentor cancelled an accepted booking.
+- **Socket.io event delivery**: Socket events (`booking:requested`, `booking:accepted`, `booking:declined`, `booking:cancelled`, `ledger:updated`) are dispatched immediately after database transactions commit.
+

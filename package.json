@@ -11,6 +11,7 @@
     "dev": "concurrently \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
     "seed": "npm run seed --workspace=server",
     "test:db": "node server/tests/db-sanity.js",
+    "test:bookings": "node server/tests/bookings.test.js",
     "test:ledger": "node -e \"console.log('added in slice 6')\""
   },
   "devDependencies": {

@@ -4,11 +4,16 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import usersRoutes from './routes/users.js';
 import peersRoutes, { getMetaHandler } from './routes/peers.js';
+import bookingsRoutes from './routes/bookings.js';
+import { initSockets } from './sockets.js';
 
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
+
+// Initialize Socket.io on the HTTP server
+initSockets(server);
 
 const PORT = process.env.PORT || 4000;
 
@@ -32,6 +37,9 @@ app.use('/api/users', usersRoutes);
 // Mount directory metadata and peers routes (Slice 2)
 app.get('/api/meta', getMetaHandler);
 app.use('/api/peers', peersRoutes);
+
+// Mount bookings routes (Slice 3)
+app.use('/api/bookings', bookingsRoutes);
 
 // 404 handler for API routes
 app.use('/api/*', (req, res) => {

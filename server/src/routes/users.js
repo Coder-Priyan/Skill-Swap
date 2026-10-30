@@ -1,6 +1,6 @@
 import express from 'express';
 import { db } from '../db.js';
-import { getUserBalance, getUserAvailableCredits } from '../ledger.js';
+import { getUserBalance, getUserAvailableCredits, getUserReservedCredits } from '../ledger.js';
 import { calculateLevel, getLevelBadge, calculateBadges } from '../config.js';
 
 const router = express.Router();
@@ -22,7 +22,7 @@ export function validateUserHeader(req, res, next) {
 
 /**
  * GET /api/users
- * Returns list of user summaries including balance, available credits, level, and badge.
+ * Returns list of user summaries including balance, available credits, reserved credits, level, and badge.
  */
 router.get('/', validateUserHeader, (req, res) => {
   try {
@@ -42,6 +42,7 @@ router.get('/', validateUserHeader, (req, res) => {
       const level = calculateLevel(mentorSessions);
       const badge = getLevelBadge(level);
       const balance = getUserBalance(u.id);
+      const reservedCredits = getUserReservedCredits(u.id);
       const availableCredits = getUserAvailableCredits(u.id);
 
       return {
@@ -56,6 +57,7 @@ router.get('/', validateUserHeader, (req, res) => {
         level,
         badge,
         balance,
+        reserved_credits: reservedCredits,
         available_credits: availableCredits,
         created_at: u.created_at,
       };
@@ -132,6 +134,7 @@ router.get('/:id', validateUserHeader, (req, res) => {
 
     // Credit calculations via ledger.js (Section 4)
     const balance = getUserBalance(id);
+    const reservedCredits = getUserReservedCredits(id);
     const availableCredits = getUserAvailableCredits(id);
 
     // Level and badge rules (Section 5)
@@ -153,6 +156,7 @@ router.get('/:id', validateUserHeader, (req, res) => {
       is_online: Boolean(user.is_online),
       created_at: user.created_at,
       balance,
+      reserved_credits: reservedCredits,
       available_credits: availableCredits,
       level,
       badge,

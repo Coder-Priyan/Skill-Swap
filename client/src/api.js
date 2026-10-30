@@ -126,4 +126,59 @@ export function getPeers(params = {}, signal = null) {
   const endpoint = queryString ? `/api/peers?${queryString}` : '/api/peers';
   return apiRequest(endpoint, { signal });
 }
+/**
+ * GET /api/bookings?role=learner|mentor
+ * @param {'learner'|'mentor'} [role]
+ */
+export function getBookings(role) {
+  const query = role ? `?role=${role}` : '';
+  return apiRequest(`/api/bookings${query}`);
+}
 
+/**
+ * GET /api/bookings/summary
+ */
+export function getBookingsSummary() {
+  return apiRequest('/api/bookings/summary');
+}
+
+/**
+ * POST /api/bookings
+ * @param {{ mentorId: string, topic: string, problemNote: string, slotId: string }} data
+ */
+export function createBooking(data) {
+  return apiRequest('/api/bookings', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * POST /api/bookings/:id/accept
+ * @param {string} id
+ */
+export function acceptBooking(id) {
+  return apiRequest(`/api/bookings/${id}/accept`, {
+    method: 'POST',
+  });
+}
+
+/**
+ * POST /api/bookings/:id/decline
+ * @param {string} id
+ */
+export function declineBooking(id) {
+  return apiRequest(`/api/bookings/${id}/decline`, {
+    method: 'POST',
+  });
+}
+
+/**
+ * POST /api/bookings/:id/cancel
+ * @param {string} id
+ */
+export function cancelBooking(id) {
+  return apiRequest(`/api/bookings/${id}/cancel`, {
+    method: 'POST',
+  });
+}
