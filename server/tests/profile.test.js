@@ -47,6 +47,11 @@ async function runTests() {
       });
     });
 
+    if (process.env.FORCE_FAIL === '1') {
+      failed++;
+      console.error('Forced failure triggered via FORCE_FAIL=1');
+    }
+
     // 1. Cover: getLevelForSessions at 0, 2, 3, 9, 10, 11
     console.log('\n--- 1. getLevelForSessions pure function tests ---');
     const cases = [

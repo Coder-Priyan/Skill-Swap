@@ -74,6 +74,11 @@ async function runTests() {
   const amanSlot = testDb.prepare('SELECT id, day_of_week, start_hour, end_hour FROM availability_slots WHERE user_id = ?').get(aman.id);
 
   console.log('Test Cases:');
+  if (process.env.FORCE_FAIL === '1') {
+    it('FORCE_FAIL test', () => {
+      assert.fail('Forced failure triggered via FORCE_FAIL=1');
+    });
+  }
 
   // 1. Valid booking request transitions to 'requested'
   let booking1 = null;

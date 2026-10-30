@@ -30,7 +30,7 @@ export function runSeed(targetDb = defaultDb) {
       experience: 'senior',
       languages: 'English, Hindi',
       is_online: 1,
-      created_at: '2026-01-01T10:00:00.000Z',
+      created_at: '2026-01-01T08:00:00.000Z',
       skills: ['React', 'CSS/UI', 'TypeScript', 'System Design'],
       slots: [
         { day_of_week: 1, start_hour: 14, end_hour: 18 },
@@ -47,7 +47,7 @@ export function runSeed(targetDb = defaultDb) {
       experience: 'mid',
       languages: 'English, Hindi',
       is_online: 1,
-      created_at: '2026-01-02T10:00:00.000Z',
+      created_at: '2026-01-01T08:00:00.000Z',
       skills: ['Node.js', 'System Design', 'SQL/Database Design', 'Git'],
       slots: [
         { day_of_week: 2, start_hour: 15, end_hour: 19 },
@@ -64,7 +64,7 @@ export function runSeed(targetDb = defaultDb) {
       experience: 'student',
       languages: 'English, Tamil',
       is_online: 0,
-      created_at: '2026-01-03T10:00:00.000Z',
+      created_at: '2026-01-01T08:00:00.000Z',
       skills: ['DSA', 'Python', 'Java'],
       slots: [
         { day_of_week: 0, start_hour: 10, end_hour: 14 },
@@ -81,7 +81,7 @@ export function runSeed(targetDb = defaultDb) {
       experience: 'junior',
       languages: 'English, Malayalam, Hindi',
       is_online: 1,
-      created_at: '2026-01-04T10:00:00.000Z',
+      created_at: '2026-01-01T08:00:00.000Z',
       skills: ['React', 'TypeScript', 'Git'],
       slots: [
         { day_of_week: 1, start_hour: 17, end_hour: 20 },
@@ -97,7 +97,7 @@ export function runSeed(targetDb = defaultDb) {
       experience: 'senior',
       languages: 'English, Bengali',
       is_online: 0,
-      created_at: '2026-01-05T10:00:00.000Z',
+      created_at: '2026-01-01T08:00:00.000Z',
       skills: ['DevOps/Docker', 'System Design', 'Node.js'],
       slots: [
         { day_of_week: 2, start_hour: 12, end_hour: 16 },
@@ -113,7 +113,7 @@ export function runSeed(targetDb = defaultDb) {
       experience: 'mid',
       languages: 'English, Telugu',
       is_online: 0,
-      created_at: '2026-01-06T10:00:00.000Z',
+      created_at: '2026-01-01T08:00:00.000Z',
       skills: ['Machine Learning', 'Python', 'SQL/Database Design'],
       slots: [
         { day_of_week: 1, start_hour: 16, end_hour: 19 },
@@ -129,7 +129,7 @@ export function runSeed(targetDb = defaultDb) {
       experience: 'senior',
       languages: 'English, Marathi',
       is_online: 1,
-      created_at: '2026-01-07T10:00:00.000Z',
+      created_at: '2026-01-01T08:00:00.000Z',
       skills: ['TypeScript', 'Node.js', 'React'],
       slots: [
         { day_of_week: 3, start_hour: 13, end_hour: 17 },
@@ -145,7 +145,7 @@ export function runSeed(targetDb = defaultDb) {
       experience: 'student',
       languages: 'English, Hindi',
       is_online: 0,
-      created_at: '2026-01-08T10:00:00.000Z',
+      created_at: '2026-01-01T08:00:00.000Z',
       skills: ['Python', 'Git', 'DSA'],
       slots: [
         { day_of_week: 0, start_hour: 14, end_hour: 17 },
@@ -161,7 +161,7 @@ export function runSeed(targetDb = defaultDb) {
       experience: 'mid',
       languages: 'English, Bengali',
       is_online: 1,
-      created_at: '2026-01-09T10:00:00.000Z',
+      created_at: '2026-01-01T08:00:00.000Z',
       skills: ['WebGL/Three.js', 'CSS/UI', 'React'],
       slots: [
         { day_of_week: 2, start_hour: 16, end_hour: 20 },
@@ -177,7 +177,7 @@ export function runSeed(targetDb = defaultDb) {
       experience: 'junior',
       languages: 'English, Telugu',
       is_online: 0,
-      created_at: '2026-01-10T10:00:00.000Z',
+      created_at: '2026-01-01T08:00:00.000Z',
       skills: ['Flutter', 'Git', 'TypeScript'],
       slots: [
         { day_of_week: 1, start_hour: 10, end_hour: 13 },
@@ -193,7 +193,7 @@ export function runSeed(targetDb = defaultDb) {
       experience: 'senior',
       languages: 'English, Marathi, Hindi',
       is_online: 0,
-      created_at: '2026-01-11T10:00:00.000Z',
+      created_at: '2026-01-01T08:00:00.000Z',
       skills: ['SQL/Database Design', 'Node.js', 'System Design'],
       slots: [
         { day_of_week: 3, start_hour: 15, end_hour: 19 },
@@ -209,7 +209,7 @@ export function runSeed(targetDb = defaultDb) {
       experience: 'junior',
       languages: 'English, Hindi',
       is_online: 0,
-      created_at: '2026-01-12T10:00:00.000Z',
+      created_at: '2026-01-01T08:00:00.000Z',
       skills: ['Java', 'DSA', 'SQL/Database Design'],
       slots: [
         { day_of_week: 0, start_hour: 16, end_hour: 19 },
@@ -225,7 +225,7 @@ export function runSeed(targetDb = defaultDb) {
       experience: 'mid',
       languages: 'English, Hindi, Marathi',
       is_online: 1,
-      created_at: '2026-01-13T10:00:00.000Z',
+      created_at: '2026-01-01T08:00:00.000Z',
       skills: ['Machine Learning', 'Python', 'TypeScript'],
       slots: [
         { day_of_week: 2, start_hour: 11, end_hour: 14 },
@@ -241,7 +241,7 @@ export function runSeed(targetDb = defaultDb) {
       experience: 'student',
       languages: 'English, Marathi',
       is_online: 1,
-      created_at: '2026-01-14T10:00:00.000Z',
+      created_at: '2026-01-01T08:00:00.000Z',
       skills: ['Git', 'Python', 'CSS/UI'],
       slots: [
         { day_of_week: 1, start_hour: 15, end_hour: 18 },
@@ -310,6 +310,7 @@ export function runSeed(targetDb = defaultDb) {
       }
 
       // Starting grant entry (SPEC.md Section 5: STARTING_CREDITS = 10, kind = 'grant', reason = 'Welcome bonus')
+      // Dated 2026-01-01T09:00:00.000Z so it precedes all bookings and running balance is never negative
       insertLedger.run(
         `led_grant_${u.id}`,
         u.id,
@@ -317,7 +318,7 @@ export function runSeed(targetDb = defaultDb) {
         'grant',
         'Welcome bonus',
         null,
-        u.created_at
+        '2026-01-01T09:00:00.000Z'
       );
     }
 

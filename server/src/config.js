@@ -2,6 +2,7 @@
 
 export const STARTING_CREDITS = 10;
 export const SESSION_COST = 5;
+export const BONUS_FOR_FIVE_STAR = 1;
 
 export const LEVEL_RULES = {
   1: { level: 1, name: 'Newcomer', minSessions: 0, maxSessions: 2 },

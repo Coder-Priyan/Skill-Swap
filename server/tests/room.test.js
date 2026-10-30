@@ -127,6 +127,10 @@ async function runTests() {
     const booking = await createRes.json();
     const bookingId = booking.id;
 
+    if (process.env.FORCE_FAIL === '1') {
+      throw new Error('Forced failure triggered via FORCE_FAIL=1');
+    }
+
     // --- ASSERTION 1: start is idempotent and wrong user gets 403; start on requested gets 409 ---
     // Start on requested booking -> 409
     const startReqRes = await fetch(`${BASE_URL}/api/bookings/${bookingId}/start`, {

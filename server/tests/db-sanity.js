@@ -12,6 +12,10 @@ async function runSanityTests() {
   const tempDbPath = path.join(__dirname, `sanity_test_${Date.now()}.db`);
   let testDb;
   let allPassed = true;
+  if (process.env.FORCE_FAIL === '1') {
+    console.error('Forced failure triggered via FORCE_FAIL=1');
+    allPassed = false;
+  }
 
   try {
     testDb = await createDatabase(tempDbPath);

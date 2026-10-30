@@ -133,6 +133,9 @@ async function run() {
   console.log(`✓ Retrieved real slot ID from GET /api/peers: ${realSlotId}\n`);
 
   console.log('Running Real-Time Assertions:');
+  if (process.env.FORCE_FAIL === '1') {
+    throw new Error('Forced failure triggered via FORCE_FAIL=1');
+  }
 
   // 1. Tanvi books Priya -> Priya receives booking:requested within 2s
   let bookingId = null;

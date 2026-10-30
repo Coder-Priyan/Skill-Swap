@@ -97,6 +97,10 @@ try {
     new Promise((res) => arjunSocket.on('connect', res)),
   ]);
 
+  if (process.env.FORCE_FAIL === '1') {
+    throw new Error('Forced failure triggered via FORCE_FAIL=1');
+  }
+
   // Case 1: Starting grants exist for all users; balance equals SUM(delta)
   {
     const users = db.prepare('SELECT id FROM users').all();
