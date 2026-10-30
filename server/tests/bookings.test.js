@@ -1,5 +1,5 @@
 // Comprehensive Test Suite for Slice 3: Bookings & Credit Reservations
-// Covers all 16 test cases against a temporary database via DB_PATH
+// Covers all test cases against a temporary database via DB_PATH
 
 import path from 'node:path';
 import fs from 'node:fs';
@@ -14,7 +14,7 @@ const tempDbFile = path.resolve(__dirname, `temp_test_bookings_${Date.now()}.db`
 process.env.DB_PATH = tempDbFile;
 
 // Dynamic import to pick up the env var
-const { createDatabase, initSchemaForDb } = await import('../src/db.js');
+const { createDatabase } = await import('../src/db.js');
 const { runSeed } = await import('../src/seed.js');
 const {
   createBooking,
@@ -25,7 +25,6 @@ const {
   getBookings,
   getBookingsSummary,
 } = await import('../src/bookings.js');
-const { getUserBalance, getUserReservedCredits, getUserAvailableCredits } = await import('../src/ledger.js');
 
 let testDb = null;
 let passedCount = 0;
@@ -61,7 +60,7 @@ async function runTests() {
   const initialLedgerSum = getLedgerSum();
   assert.strictEqual(initialLedgerSum, 140, 'Initial sum of ledger deltas must equal 140');
 
-  // Verify starting state for Tanvi (TerminalTinkerer) and Priya (PixelPriya)
+  // Seed users
   const tanvi = testDb.prepare('SELECT id, name FROM users WHERE id = ?').get('usr_terminaltinkerer');
   const priya = testDb.prepare('SELECT id, name FROM users WHERE id = ?').get('usr_pixelpriya');
   const arjun = testDb.prepare('SELECT id, name FROM users WHERE id = ?').get('usr_bytebender');
@@ -69,16 +68,16 @@ async function runTests() {
 
   assert.ok(tanvi && priya && arjun && aman, 'Required seed users must exist');
 
-  // Get a valid slot for Priya
+  // Slots
   const priyaSlot = testDb.prepare('SELECT id, day_of_week, start_hour, end_hour FROM availability_slots WHERE user_id = ?').get(priya.id);
   const arjunSlot = testDb.prepare('SELECT id, day_of_week, start_hour, end_hour FROM availability_slots WHERE user_id = ?').get(arjun.id);
   const amanSlot = testDb.prepare('SELECT id, day_of_week, start_hour, end_hour FROM availability_slots WHERE user_id = ?').get(aman.id);
 
   console.log('Test Cases:');
 
-  // 1. Valid booking request transitions to 'pending'
+  // 1. Valid booking request transitions to 'requested'
   let booking1 = null;
-  it('1. Valid booking request transitions to pending', () => {
+  it('1. Valid booking request transitions to requested', () => {
     booking1 = createBooking({
       learnerId: tanvi.id,
       mentorId: priya.id,
@@ -88,7 +87,7 @@ async function runTests() {
     }, testDb);
 
     assert.ok(booking1, 'Booking should be created');
-    assert.strictEqual(booking1.status, 'pending');
+    assert.strictEqual(booking1.status, 'requested');
     assert.strictEqual(booking1.learner_id, tanvi.id);
     assert.strictEqual(booking1.mentor_id, priya.id);
     assert.strictEqual(booking1.cost, 5);
@@ -177,12 +176,10 @@ async function runTests() {
 
   // 6. Learner with < 5 available credits blocked (402)
   it('6. Learner with < 5 available credits blocked (402)', () => {
-    // usr_bughunter has balance 0 in seed
-    const bughunterSlot = testDb.prepare('SELECT id FROM availability_slots WHERE user_id = ?').get('usr_bughunter');
     let error = null;
     try {
       createBooking({
-        learnerId: 'usr_bughunter', // balance = 0 cr
+        learnerId: 'usr_bughunter', // balance = 0 cr in seed
         mentorId: priya.id,
         topic: 'React',
         problemNote: 'Would love help diagnosing this React error',
@@ -219,27 +216,29 @@ async function runTests() {
     assert.strictEqual(getLedgerSum(), 140);
   });
 
-  // 8. Duplicate request: another pending/accepted request for same learner+mentor blocked (409)
-  it('8. Duplicate request: another pending/accepted request for same learner+mentor blocked (409)', () => {
+  // 8. Duplicate request: a learner cannot have two open (requested or accepted) bookings with the same mentor (409)
+  it('8. Duplicate request: another open request with same mentor blocked (409)', () => {
+    // Try to book Priya on a different slot
+    const priyaSlot2 = testDb.prepare('SELECT id FROM availability_slots WHERE user_id = ? LIMIT 1 OFFSET 1').get(priya.id);
     let error = null;
     try {
       createBooking({
         learnerId: tanvi.id,
         mentorId: priya.id,
         topic: 'React',
-        problemNote: 'Another booking request on the same slot',
-        slotId: priyaSlot.id,
+        problemNote: 'Another booking request with Priya on another slot',
+        slotId: priyaSlot2.id,
       }, testDb);
     } catch (err) {
       error = err;
     }
     assert.ok(error, 'Should throw error');
     assert.strictEqual(error.status, 409);
-    assert.match(error.message, /already exists/i);
+    assert.match(error.message, /already exists for this mentor/i);
     assert.strictEqual(getLedgerSum(), 140);
   });
 
-  // 9. Accept transitions to 'accepted'; learner's available credits drop by 5; learner's balance unchanged; mentor's balance unchanged
+  // 9. Accept transitions to 'accepted'; learner's available credits drop by 5; balances unchanged
   let acceptedBooking = null;
   it("9. Accept transitions to 'accepted'; learner available credits drop by 5; balances unchanged", () => {
     const tanviBalBefore = testDb.prepare('SELECT COALESCE(SUM(delta), 0) AS b FROM ledger_entries WHERE user_id = ?').get(tanvi.id).b;
@@ -269,10 +268,9 @@ async function runTests() {
     assert.strictEqual(getLedgerSum(), 140, 'Ledger delta sum must remain 140');
   });
 
-  // 10. Second accept on a different mentor fails if learner now has < 5 available credits
+  // 10. Second accept on a different mentor fails if learner now has < 5 available credits (402)
   it('10. Second accept on different mentor fails if learner now has < 5 available credits (402)', () => {
-    // Setup a user who starts with 5 credits and has 2 pending requests
-    // Let's create user 'usr_two_requests'
+    // Setup a user who starts with 5 credits and has 2 requested bookings
     testDb.prepare(`
       INSERT INTO users (id, name, handle, avatar_color, bio, experience, languages, is_online, created_at)
       VALUES ('usr_test_tworeqs', 'Two Reqs User', 'TwoReqs', '#123456', 'Test user', 'student', 'English', 1, datetime('now'))
@@ -282,7 +280,6 @@ async function runTests() {
       VALUES ('led_test_tworeqs_grant', 'usr_test_tworeqs', 5, 'grant', 'Test grant', NULL, datetime('now'))
     `).run();
 
-    // Create 2 pending bookings for usr_test_tworeqs with different mentors (Priya and Arjun)
     const priyaSlot2 = testDb.prepare('SELECT id FROM availability_slots WHERE user_id = ? LIMIT 1 OFFSET 1').get(priya.id);
     const bReq1 = createBooking({
       learnerId: 'usr_test_tworeqs',
@@ -300,8 +297,8 @@ async function runTests() {
       slotId: arjunSlot.id,
     }, testDb);
 
-    assert.strictEqual(bReq1.status, 'pending');
-    assert.strictEqual(bReq2.status, 'pending');
+    assert.strictEqual(bReq1.status, 'requested');
+    assert.strictEqual(bReq2.status, 'requested');
 
     // First accept succeeds (by Priya)
     const acc1 = acceptBooking({ bookingId: bReq1.id, mentorId: priya.id }, testDb);
@@ -318,7 +315,7 @@ async function runTests() {
     assert.strictEqual(error.status, 402);
     assert.match(error.message, /credits/i);
 
-    // Clean up temporary test user's ledger entry so sum stays 140
+    // Clean up temporary test user's data
     testDb.prepare("DELETE FROM bookings WHERE learner_id = 'usr_test_tworeqs'").run();
     testDb.prepare("DELETE FROM ledger_entries WHERE user_id = 'usr_test_tworeqs'").run();
     testDb.prepare("DELETE FROM users WHERE id = 'usr_test_tworeqs'").run();
@@ -326,21 +323,8 @@ async function runTests() {
     assert.strictEqual(getLedgerSum(), 140);
   });
 
-  // 11. Decline transitions to 'declined', frees any reservation
-  it("11. Decline transitions to 'declined', frees any reservation", () => {
-    // Create a new pending request from Tanvi? Tanvi now has 0 available credits because booking1 is accepted.
-    // Let's cancel booking1 or test decline on a fresh request from someone with credits:
-    // Give user_scriptsage a pending booking with Priya
-    const sage = 'usr_scriptsage';
-    // User scriptsage has 0 credits in seed. Let's give scriptsage starting grant to test decline:
-    // Wait, let's use Tanvi by temporarily declining a request from another user or cancelling booking1 first.
-    // Let's create a pending booking: we can give temporary credits or cancel booking1 first.
-    // Better: let's test cancel of booking1 in #13, and here test decline on a pending booking.
-    // Let's cancel booking1 first to free Tanvi's 5 credits!
-  });
-
-  // Let's do Cancel of booking1 from 'accepted' (test 13)
-  it("13. Cancel from 'accepted' (by either) transitions to 'cancelled', frees reserved credits, records cancelled_by", () => {
+  // 11. Cancel from 'accepted' by learner transitions to 'cancelled', frees reserved credits, records cancelled_by='learner'
+  it("11. Cancel from 'accepted' by learner transitions to 'cancelled', frees reserved credits, records cancelled_by='learner'", () => {
     const cancelled = cancelBooking({
       bookingId: booking1.id,
       userId: tanvi.id,
@@ -358,8 +342,8 @@ async function runTests() {
     assert.strictEqual(getLedgerSum(), 140);
   });
 
-  // Now Tanvi has 5 available credits again! Let's test decline (test 11)
-  it("11. Decline transitions to 'declined', frees any reservation", () => {
+  // 12. Decline transitions to 'declined', frees any reservation
+  it("12. Decline transitions to 'declined', frees any reservation", () => {
     const bookingToDecline = createBooking({
       learnerId: tanvi.id,
       mentorId: priya.id,
@@ -368,7 +352,7 @@ async function runTests() {
       slotId: priyaSlot.id,
     }, testDb);
 
-    assert.strictEqual(bookingToDecline.status, 'pending');
+    assert.strictEqual(bookingToDecline.status, 'requested');
 
     const declined = declineBooking({
       bookingId: bookingToDecline.id,
@@ -383,17 +367,17 @@ async function runTests() {
     assert.strictEqual(getLedgerSum(), 140);
   });
 
-  // 12. Cancel from 'pending' (by learner) transitions to 'cancelled'
-  it("12. Cancel from 'pending' (by learner) transitions to 'cancelled'", () => {
+  // 13. Cancel from 'requested' (by learner) transitions to 'cancelled'
+  it("13. Cancel from 'requested' (by learner) transitions to 'cancelled'", () => {
     const bookingToCancel = createBooking({
       learnerId: tanvi.id,
       mentorId: priya.id,
       topic: 'React',
-      problemNote: 'Request to be cancelled by learner while pending',
+      problemNote: 'Request to be cancelled by learner while requested',
       slotId: priyaSlot.id,
     }, testDb);
 
-    assert.strictEqual(bookingToCancel.status, 'pending');
+    assert.strictEqual(bookingToCancel.status, 'requested');
 
     const cancelled = cancelBooking({
       bookingId: bookingToCancel.id,
@@ -405,8 +389,117 @@ async function runTests() {
     assert.strictEqual(getLedgerSum(), 140);
   });
 
-  // 14. Illegal transitions return 409 (e.g. accept already declined or cancelled)
-  it('14. Illegal transitions return 409 (e.g. accept already declined)', () => {
+  // 14. Mentor cancelling an accepted booking sets cancelled_by='mentor'
+  it("14. Mentor cancelling an accepted booking sets cancelled_by='mentor'", () => {
+    const bookingToAccept = createBooking({
+      learnerId: tanvi.id,
+      mentorId: priya.id,
+      topic: 'React',
+      problemNote: 'Session that mentor will subsequently cancel',
+      slotId: priyaSlot.id,
+    }, testDb);
+
+    acceptBooking({ bookingId: bookingToAccept.id, mentorId: priya.id }, testDb);
+
+    // Mentor cancels
+    const mentorCancelled = cancelBooking({
+      bookingId: bookingToAccept.id,
+      userId: priya.id,
+    }, testDb);
+
+    assert.strictEqual(mentorCancelled.status, 'cancelled');
+    assert.strictEqual(mentorCancelled.cancelled_by, 'mentor');
+
+    // Credits freed
+    const tanviReserved = testDb.prepare("SELECT COALESCE(SUM(cost), 0) AS r FROM bookings WHERE learner_id = ? AND status IN ('accepted', 'in_progress')").get(tanvi.id).r;
+    assert.strictEqual(tanviReserved, 0);
+    assert.strictEqual(getLedgerSum(), 140);
+  });
+
+  // 15. Wrong role gets 403 (learner tries to accept; mentor tries to cancel a requested booking)
+  it('15. Wrong role gets 403: learner tries to accept; mentor tries to cancel a requested booking', () => {
+    const freshReq = createBooking({
+      learnerId: tanvi.id,
+      mentorId: priya.id,
+      topic: 'React',
+      problemNote: 'Testing wrong role actions on requested booking',
+      slotId: priyaSlot.id,
+    }, testDb);
+
+    // Learner tries to accept (mentor-only action)
+    let learnerAcceptErr = null;
+    try {
+      acceptBooking({ bookingId: freshReq.id, mentorId: tanvi.id }, testDb);
+    } catch (err) {
+      learnerAcceptErr = err;
+    }
+    assert.ok(learnerAcceptErr, 'Learner accepting should throw error');
+    assert.strictEqual(learnerAcceptErr.status, 403);
+    assert.match(learnerAcceptErr.message, /assigned mentor/i);
+
+    // Mentor tries to cancel a requested booking (learner-only; mentor must decline)
+    let mentorCancelErr = null;
+    try {
+      cancelBooking({ bookingId: freshReq.id, userId: priya.id }, testDb);
+    } catch (err) {
+      mentorCancelErr = err;
+    }
+    assert.ok(mentorCancelErr, 'Mentor cancelling requested booking should throw error');
+    assert.strictEqual(mentorCancelErr.status, 403);
+    assert.match(mentorCancelErr.message, /decline instead/i);
+
+    // Clean up
+    cancelBooking({ bookingId: freshReq.id, userId: tanvi.id }, testDb);
+    assert.strictEqual(getLedgerSum(), 140);
+  });
+
+  // 16. Non-participant cannot accept/decline/cancel (403)
+  it('16. Non-participant cannot accept/decline/cancel (403)', () => {
+    const freshBooking = createBooking({
+      learnerId: tanvi.id,
+      mentorId: priya.id,
+      topic: 'React',
+      problemNote: 'Checking authorization boundaries with a third party',
+      slotId: priyaSlot.id,
+    }, testDb);
+
+    // Arjun (third party) tries to accept
+    let acceptErr = null;
+    try {
+      acceptBooking({ bookingId: freshBooking.id, mentorId: arjun.id }, testDb);
+    } catch (err) {
+      acceptErr = err;
+    }
+    assert.ok(acceptErr, 'Third party accept should throw');
+    assert.strictEqual(acceptErr.status, 403);
+
+    // Arjun tries to decline
+    let declineErr = null;
+    try {
+      declineBooking({ bookingId: freshBooking.id, mentorId: arjun.id }, testDb);
+    } catch (err) {
+      declineErr = err;
+    }
+    assert.ok(declineErr, 'Third party decline should throw');
+    assert.strictEqual(declineErr.status, 403);
+
+    // Arjun tries to cancel
+    let cancelErr = null;
+    try {
+      cancelBooking({ bookingId: freshBooking.id, userId: arjun.id }, testDb);
+    } catch (err) {
+      cancelErr = err;
+    }
+    assert.ok(cancelErr, 'Third party cancel should throw');
+    assert.strictEqual(cancelErr.status, 403);
+
+    // Clean up freshBooking
+    cancelBooking({ bookingId: freshBooking.id, userId: tanvi.id }, testDb);
+    assert.strictEqual(getLedgerSum(), 140);
+  });
+
+  // 17. Illegal transitions return 409 (e.g. accept already declined or cancelled)
+  it('17. Illegal transitions return 409 (e.g. accept already declined or cancelled)', () => {
     // booking1 is currently 'cancelled'
     let error = null;
     try {
@@ -423,63 +516,8 @@ async function runTests() {
     assert.strictEqual(getLedgerSum(), 140);
   });
 
-  // 15. Non-participant cannot accept/decline/cancel (403)
-  it('15. Non-participant cannot accept/decline/cancel (403)', () => {
-    // Create fresh pending booking between Tanvi and Priya
-    const freshBooking = createBooking({
-      learnerId: tanvi.id,
-      mentorId: priya.id,
-      topic: 'React',
-      problemNote: 'Checking authorization boundaries with a third party',
-      slotId: priyaSlot.id,
-    }, testDb);
-
-    // Arjun (third party) tries to accept
-    let acceptErr = null;
-    try {
-      acceptBooking({
-        bookingId: freshBooking.id,
-        mentorId: arjun.id,
-      }, testDb);
-    } catch (err) {
-      acceptErr = err;
-    }
-    assert.ok(acceptErr, 'Third party accept should throw');
-    assert.strictEqual(acceptErr.status, 403);
-
-    // Arjun tries to decline
-    let declineErr = null;
-    try {
-      declineBooking({
-        bookingId: freshBooking.id,
-        mentorId: arjun.id,
-      }, testDb);
-    } catch (err) {
-      declineErr = err;
-    }
-    assert.ok(declineErr, 'Third party decline should throw');
-    assert.strictEqual(declineErr.status, 403);
-
-    // Arjun tries to cancel
-    let cancelErr = null;
-    try {
-      cancelBooking({
-        bookingId: freshBooking.id,
-        userId: arjun.id,
-      }, testDb);
-    } catch (err) {
-      cancelErr = err;
-    }
-    assert.ok(cancelErr, 'Third party cancel should throw');
-    assert.strictEqual(cancelErr.status, 403);
-
-    // Clean up freshBooking
-    cancelBooking({ bookingId: freshBooking.id, userId: tanvi.id }, testDb);
-    assert.strictEqual(getLedgerSum(), 140);
-  });
-
-  // 16. SUM of all ledger deltas before and after every test stays = 140 (no ledger entries written in this slice)
-  it('16. SUM of all ledger deltas before and after stays = 140', () => {
+  // 18. SUM of all ledger deltas before and after every test stays = 140 (no ledger entries written in this slice)
+  it('18. SUM of all ledger deltas before and after stays = 140', () => {
     const finalSum = getLedgerSum();
     assert.strictEqual(finalSum, 140, 'No ledger mutations allowed in Slice 3');
   });
@@ -490,17 +528,11 @@ async function runTests() {
 
   // Clean up temp DB files
   try {
-    if (fs.existsSync(tempDbFile)) {
-      fs.unlinkSync(tempDbFile);
-    }
-    if (fs.existsSync(`${tempDbFile}-wal`)) {
-      fs.unlinkSync(`${tempDbFile}-wal`);
-    }
-    if (fs.existsSync(`${tempDbFile}-shm`)) {
-      fs.unlinkSync(`${tempDbFile}-shm`);
-    }
-  } catch (err) {
-    // Ignore cleanup errors on Windows locks
+    if (fs.existsSync(tempDbFile)) fs.unlinkSync(tempDbFile);
+    if (fs.existsSync(`${tempDbFile}-wal`)) fs.unlinkSync(`${tempDbFile}-wal`);
+    if (fs.existsSync(`${tempDbFile}-shm`)) fs.unlinkSync(`${tempDbFile}-shm`);
+  } catch {
+    // Ignore cleanup errors on Windows file locks
   }
 }
 

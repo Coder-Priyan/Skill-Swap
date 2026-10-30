@@ -154,8 +154,13 @@ Show green/red checks plus the numbers. This is what we show judges to prove the
 
 ## 15. Decisions log
 - **node:sqlite fallback**: When `better-sqlite3` native compilation/prebuilt binaries are unavailable (such as offline environments or machines without C++ build tools), the database engine seamlessly falls back to Node 22's native synchronous `node:sqlite` (`DatabaseSync`) with an identical synchronous interface and `SAVEPOINT`-based nested transaction support.
+- **Booking status value**: The initial booking status value in SQLite, server logic, API responses, and client state is `"requested"`. UI displays may show user-friendly labels like "Pending" or "Requested".
+- **Insufficient credits error**: Booking creation or acceptance when the learner has insufficient available credits returns HTTP 402 (`Payment Required`).
+- **Duplicate booking rule**: A learner cannot have two open (`requested` or `accepted`) bookings with the same mentor.
+- **Ledger privacy rule**: A user can only read their own ledger (`X-User-Id` header must match `:userId` in `GET /api/ledger/:userId`, else HTTP 403 `Forbidden`).
 - **Booking level rule**: `mentor.level >= learner.level` is enforced during booking creation and peer eligibility checking.
 - **Booking payload**: `POST /bookings` accepts `{ mentorId, topic, problemNote, slotId }`, and the server resolves and stores the human-readable `slot_label`.
 - **Cancelled by column**: A nullable `cancelled_by TEXT` column is tracked on `bookings` to record whether the learner or mentor cancelled an accepted booking.
 - **Socket.io event delivery**: Socket events (`booking:requested`, `booking:accepted`, `booking:declined`, `booking:cancelled`, `ledger:updated`) are dispatched immediately after database transactions commit.
+- **Credit reservation in Slice 3 & 4**: Available credits are dynamically computed as `balance - reserved_credits`, where `reserved_credits = sum(cost)` of bookings in `accepted` or `in_progress`. No ledger mutations occur until session completion (Slice 6).
 

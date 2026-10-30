@@ -28,7 +28,7 @@ export default function BookingCard({
   const [confirmDialog, setConfirmDialog] = useState(null); // 'accept' | 'decline' | 'cancel'
 
   const counterpart = role === 'learner' ? booking.mentor : booking.learner;
-  const isPending = booking.status === 'pending';
+  const isPending = booking.status === 'requested' || booking.status === 'pending';
   const isAccepted = booking.status === 'accepted';
   const isClosed = ['declined', 'cancelled', 'completed', 'expired'].includes(booking.status);
 
@@ -53,6 +53,7 @@ export default function BookingCard({
 
   const getStatusBadgeClass = (status) => {
     switch (status) {
+      case 'requested':
       case 'pending':
         return 'badge-status-pending';
       case 'accepted':
@@ -254,7 +255,7 @@ export default function BookingCard({
               <button
                 className="btn btn-sm btn-primary btn-disabled-hint"
                 disabled
-                title="Live session rooms unlock in Slice 4"
+                title="Live room opens in the next update"
               >
                 Join Room 🔒
               </button>

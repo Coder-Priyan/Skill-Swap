@@ -73,10 +73,12 @@ export default function Bookings({ currentUserId, onNavigate, onBookingsChange }
   const currentList = activeTab === 'learning' ? learningBookings : mentoringBookings;
   const currentRole = activeTab === 'learning' ? 'learner' : 'mentor';
 
+  const isPendingStatus = (b) => b.status === 'requested' || b.status === 'pending';
+
   // Filter bookings based on statusFilter
   const filteredBookings = currentList.filter((b) => {
     if (statusFilter === 'all') return true;
-    if (statusFilter === 'pending') return b.status === 'pending';
+    if (statusFilter === 'pending' || statusFilter === 'requested') return isPendingStatus(b);
     if (statusFilter === 'accepted') return b.status === 'accepted';
     if (statusFilter === 'closed') {
       return ['declined', 'cancelled', 'completed', 'expired'].includes(b.status);
@@ -85,8 +87,8 @@ export default function Bookings({ currentUserId, onNavigate, onBookingsChange }
   });
 
   // Calculate badge counts
-  const pendingMentoringCount = mentoringBookings.filter((b) => b.status === 'pending').length;
-  const pendingLearningCount = learningBookings.filter((b) => b.status === 'pending').length;
+  const pendingMentoringCount = mentoringBookings.filter(isPendingStatus).length;
+  const pendingLearningCount = learningBookings.filter(isPendingStatus).length;
 
   return (
     <div className="bookings-page">
@@ -150,7 +152,7 @@ export default function Bookings({ currentUserId, onNavigate, onBookingsChange }
             className={`filter-chip ${statusFilter === 'pending' ? 'active' : ''}`}
             onClick={() => setStatusFilter('pending')}
           >
-            Pending ({currentList.filter((b) => b.status === 'pending').length})
+            Pending ({currentList.filter(isPendingStatus).length})
           </button>
           <button
             type="button"

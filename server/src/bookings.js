@@ -147,20 +147,20 @@ export function createBooking({ learnerId, mentorId, topic, problemNote, slotId 
     throw err;
   }
 
-  // 7. Check duplicate open request for same learner + mentor + slot
+  // 7. Check duplicate open request for same learner + mentor
   const duplicate = targetDb.prepare(`
     SELECT id FROM bookings 
-    WHERE learner_id = ? AND mentor_id = ? AND slot_label = ? 
-      AND status IN ('pending', 'accepted')
-  `).get(learnerId, mentorId, slotLabel);
+    WHERE learner_id = ? AND mentor_id = ? 
+      AND status IN ('requested', 'accepted')
+  `).get(learnerId, mentorId);
 
   if (duplicate) {
-    const err = new Error('An active booking request already exists for this mentor and slot');
+    const err = new Error('An active booking request already exists for this mentor');
     err.status = 409;
     throw err;
   }
 
-  // 8. Insert booking in 'pending' status
+  // 8. Insert booking in 'requested' status
   const bookingId = `bok_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   const requestedAt = new Date().toISOString();
 
@@ -169,7 +169,7 @@ export function createBooking({ learnerId, mentorId, topic, problemNote, slotId 
       id, learner_id, mentor_id, topic, problem_note, slot_label,
       status, cost, room_id, requested_at, accepted_at, started_at, completed_at, cancelled_by
     )
-    VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, NULL, ?, NULL, NULL, NULL, NULL)
+    VALUES (?, ?, ?, ?, ?, ?, 'requested', ?, NULL, ?, NULL, NULL, NULL, NULL)
   `).run(
     bookingId,
     learnerId,
@@ -202,7 +202,7 @@ export function acceptBooking({ bookingId, mentorId }, targetDb = db) {
     throw err;
   }
 
-  if (booking.status !== 'pending') {
+  if (booking.status !== 'requested') {
     const err = new Error(`Cannot accept booking in status '${booking.status}'`);
     err.status = 409;
     throw err;
@@ -244,7 +244,7 @@ export function acceptBooking({ bookingId, mentorId }, targetDb = db) {
 }
 
 /**
- * Decline a pending booking (mentor only).
+ * Decline a requested booking (mentor only).
  */
 export function declineBooking({ bookingId, mentorId }, targetDb = db) {
   const booking = targetDb.prepare('SELECT * FROM bookings WHERE id = ?').get(bookingId);
@@ -260,7 +260,7 @@ export function declineBooking({ bookingId, mentorId }, targetDb = db) {
     throw err;
   }
 
-  if (booking.status !== 'pending') {
+  if (booking.status !== 'requested') {
     const err = new Error(`Cannot decline booking in status '${booking.status}'`);
     err.status = 409;
     throw err;
@@ -277,7 +277,7 @@ export function declineBooking({ bookingId, mentorId }, targetDb = db) {
 
 /**
  * Cancel a booking.
- * Learner can cancel 'pending' or 'accepted'.
+ * Learner can cancel 'requested' or 'accepted'.
  * Mentor can cancel 'accepted' only.
  */
 export function cancelBooking({ bookingId, userId }, targetDb = db) {
@@ -297,9 +297,9 @@ export function cancelBooking({ bookingId, userId }, targetDb = db) {
     throw err;
   }
 
-  if (booking.status === 'pending') {
+  if (booking.status === 'requested') {
     if (!isLearner) {
-      const err = new Error('Mentors cannot cancel a pending booking; use decline instead');
+      const err = new Error('Mentors cannot cancel a requested booking; use decline instead');
       err.status = 403;
       throw err;
     }
@@ -337,20 +337,20 @@ export function getBookingById(bookingId, currentUserId, targetDb = db) {
   // Compute available actions based on role and status
   const availableActions = [];
   if (myRole === 'mentor') {
-    if (booking.status === 'pending') {
+    if (booking.status === 'requested') {
       availableActions.push('accept', 'decline');
     } else if (booking.status === 'accepted') {
       availableActions.push('cancel');
     }
   } else if (myRole === 'learner') {
-    if (booking.status === 'pending' || booking.status === 'accepted') {
+    if (booking.status === 'requested' || booking.status === 'accepted') {
       availableActions.push('cancel');
     }
   }
 
-  // Accept block reason for mentor on pending booking
+  // Accept block reason for mentor on requested booking
   let acceptBlockReason = null;
-  if (myRole === 'mentor' && booking.status === 'pending') {
+  if (myRole === 'mentor' && booking.status === 'requested') {
     const learnerBalance = targetDb.prepare(`
       SELECT COALESCE(SUM(delta), 0) AS balance FROM ledger_entries WHERE user_id = ?
     `).get(booking.learner_id).balance;
@@ -397,7 +397,7 @@ export function getBookings({ userId, role, status }, targetDb = db) {
 
   if (status) {
     if (status === 'active') {
-      whereClauses.push("b.status IN ('pending', 'accepted', 'in_progress')");
+      whereClauses.push("b.status IN ('requested', 'accepted', 'in_progress')");
     } else if (status === 'closed') {
       whereClauses.push("b.status IN ('completed', 'declined', 'cancelled')");
     } else {
@@ -424,12 +424,12 @@ export function getBookings({ userId, role, status }, targetDb = db) {
 export function getBookingsSummary(userId, targetDb = db) {
   const pendingMentor = targetDb.prepare(`
     SELECT COUNT(*) AS count FROM bookings 
-    WHERE mentor_id = ? AND status = 'pending'
+    WHERE mentor_id = ? AND status = 'requested'
   `).get(userId).count;
 
   const pendingLearner = targetDb.prepare(`
     SELECT COUNT(*) AS count FROM bookings 
-    WHERE learner_id = ? AND status = 'pending'
+    WHERE learner_id = ? AND status = 'requested'
   `).get(userId).count;
 
   const acceptedLearner = targetDb.prepare(`
