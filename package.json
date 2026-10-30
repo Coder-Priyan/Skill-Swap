@@ -16,8 +16,8 @@
     "test:sockets": "node server/tests/sockets.test.js",
     "test:profile": "node server/tests/profile.test.js",
     "test:room": "node server/tests/room.test.js",
-    "test:all": "npm run test:db && npm run test:bookings && npm run test:sockets && npm run test:profile && npm run test:room",
-    "test:ledger": "node -e \"console.log('added in slice 6')\""
+    "test:ledger": "node server/tests/ledger.test.js",
+    "test:all": "npm run test:db && npm run test:bookings && npm run test:sockets && npm run test:profile && npm run test:room && npm run test:ledger"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

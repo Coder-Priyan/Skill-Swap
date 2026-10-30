@@ -342,7 +342,7 @@ export function getBookingById(bookingId, currentUserId, targetDb = db) {
     } else if (booking.status === 'accepted') {
       availableActions.push('join', 'cancel');
     } else if (booking.status === 'in_progress') {
-      availableActions.push('join');
+      availableActions.push('join', 'end');
     }
   } else if (myRole === 'learner') {
     if (booking.status === 'requested') {
@@ -350,7 +350,7 @@ export function getBookingById(bookingId, currentUserId, targetDb = db) {
     } else if (booking.status === 'accepted') {
       availableActions.push('join', 'cancel');
     } else if (booking.status === 'in_progress') {
-      availableActions.push('join');
+      availableActions.push('join', 'end');
     }
   }
 

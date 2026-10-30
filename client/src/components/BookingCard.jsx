@@ -101,7 +101,7 @@ export default function BookingCard({
 
         <div className="booking-status-tag-group">
           <span className={`status-pill ${getStatusBadgeClass(booking.status)}`}>
-            {isInProgress ? 'LIVE' : booking.status}
+            {isInProgress ? 'LIVE' : booking.status === 'completed' ? 'Completed' : booking.status}
           </span>
           {booking.cancelled_by && (
             <span className="cancelled-by-label">
@@ -126,10 +126,18 @@ export default function BookingCard({
 
       <div className="booking-card-footer">
         <div className="booking-timestamp-info">
-          {booking.accepted_at && (
+          {booking.status === 'completed' && (
+            <div className="credits-moved-badge">
+              🪙 {booking.cost} cr moved
+            </div>
+          )}
+          {booking.completed_at && (
+            <span>Completed {formatRelativeTime(booking.completed_at)}</span>
+          )}
+          {booking.accepted_at && !booking.completed_at && (
             <span>Accepted {formatRelativeTime(booking.accepted_at)}</span>
           )}
-          {booking.started_at && (
+          {booking.started_at && !booking.completed_at && (
             <span>Started {formatRelativeTime(booking.started_at)}</span>
           )}
           {booking.cancelled_at && (

@@ -202,6 +202,24 @@ export function startBooking(id) {
 }
 
 /**
+ * POST /api/bookings/:id/complete
+ * @param {string} id
+ */
+export function completeBooking(id) {
+  return apiRequest(`/api/bookings/${id}/complete`, {
+    method: 'POST',
+  });
+}
+
+/**
+ * GET /api/bookings/:id/notes
+ * @param {string} id
+ */
+export function getBookingNotes(id) {
+  return apiRequest(`/api/bookings/${id}/notes`);
+}
+
+/**
  * GET /api/ledger/:userId
  * @param {string} userId
  * @param {object} [params]

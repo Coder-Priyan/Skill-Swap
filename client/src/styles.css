@@ -2864,5 +2864,105 @@ body {
   color: var(--text-secondary);
 }
 
+/* Slice 6 Settlement & Modals */
+.settlement-modal {
+  max-width: 480px;
+  background: var(--bg-card, #1e293b);
+  border: 1px solid var(--border-medium, #334155);
+  border-radius: var(--radius-lg, 12px);
+  padding: 2rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  text-align: center;
+}
+
+.settlement-modal-header {
+  margin-bottom: 1.25rem;
+}
+
+.settlement-modal-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.settlement-credits-transfer-line {
+  font-size: 1.05rem;
+  color: var(--text-primary, #f8fafc);
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+}
+
+.settlement-user-balance-box {
+  background: rgba(14, 165, 233, 0.1);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  border-radius: var(--radius-md, 8px);
+  padding: 0.85rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.settlement-user-balance-box .balance-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.settlement-user-balance-box .balance-value {
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--color-accent-amber, #f59e0b);
+}
+
+.settlement-levelup-card {
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.15), rgba(249, 115, 22, 0.15));
+  border: 1px solid rgba(234, 179, 8, 0.4);
+  border-radius: var(--radius-md, 8px);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.settlement-levelup-card .levelup-badge-tag {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #fbbf24;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.35rem;
+}
+
+.settlement-levelup-card .levelup-text {
+  font-size: 0.95rem;
+  color: var(--text-primary, #f8fafc);
+}
+
+.settlement-modal-footer {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.confirm-modal {
+  max-width: 440px;
+  background: var(--bg-card, #1e293b);
+  border: 1px solid var(--border-medium, #334155);
+  border-radius: var(--radius-lg, 12px);
+  padding: 1.75rem;
+}
+
+.credits-moved-badge {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-accent-amber, #f59e0b);
+  background: rgba(245, 158, 11, 0.12);
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-right: 0.5rem;
+}
+
 
 

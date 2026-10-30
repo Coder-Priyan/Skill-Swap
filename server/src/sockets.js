@@ -235,6 +235,21 @@ export function emitToUser(userId, event, payload) {
   io.to(`user:${userId}`).emit(event, payload);
 }
 
+/**
+ * Emit an event to a specific live room.
+ * 
+ * @param {string} roomId 
+ * @param {string} event 
+ * @param {object} payload 
+ */
+export function emitToRoom(roomId, event, payload) {
+  if (!io) {
+    console.warn(`[Sockets] emitToRoom called before socket server was initialized: ${event} -> ${roomId}`);
+    return;
+  }
+  io.to(`room:${roomId}`).emit(event, payload);
+}
+
 export function getIO() {
   return io;
 }

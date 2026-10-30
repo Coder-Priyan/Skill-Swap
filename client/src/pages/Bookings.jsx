@@ -50,12 +50,20 @@ export default function Bookings({ currentUserId, onNavigate, onBookingsChange }
     const unsubCan = subscribeToSocketEvent('booking:cancelled', () => {
       fetchAllBookings();
     });
+    const unsubEnded = subscribeToSocketEvent('session:ended', () => {
+      fetchAllBookings();
+    });
+    const unsubLedger = subscribeToSocketEvent('ledger:updated', () => {
+      fetchAllBookings();
+    });
 
     return () => {
       unsubReq();
       unsubAcc();
       unsubDec();
       unsubCan();
+      unsubEnded();
+      unsubLedger();
     };
   }, [fetchAllBookings]);
 

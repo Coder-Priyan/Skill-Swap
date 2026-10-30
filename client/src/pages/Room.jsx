@@ -5,7 +5,7 @@ import { WebsocketProvider } from 'y-websocket';
 import { MonacoBinding } from 'y-monaco';
 import Editor from '@monaco-editor/react';
 import monaco from '../monacoConfig';
-import { getBooking, startBooking, getCurrentUserId } from '../api';
+import { getBooking, startBooking, completeBooking, getCurrentUserId } from '../api';
 import { getSocket, connectSocket } from '../socket';
 
 const LANGUAGES = [
@@ -28,6 +28,12 @@ export default function Room() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sessionEnded, setSessionEnded] = useState(false);
+  const [isReadOnly, setIsReadOnly] = useState(false);
+
+  // Settlement & Confirm Modals (Slice 6)
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [endingSession, setEndingSession] = useState(false);
+  const [settlementData, setSettlementData] = useState(null);
 
   // Connection status: 'live' | 'reconnecting' | 'offline'
   const [connStatus, setConnStatus] = useState('live');
@@ -43,6 +49,7 @@ export default function Room() {
   const editorRef = useRef(null);
   const docRef = useRef(null);
   const providerRef = useRef(null);
+  const timerIntervalRef = useRef(null);
   const bindingRef = useRef(null);
   const chatBottomRef = useRef(null);
   const prevPresenceRef = useRef([]);
@@ -116,9 +123,9 @@ export default function Room() {
     };
   }, [targetId, currentUserId]);
 
-  // Live timer since started_at
+  // Live timer since started_at (stops when sessionEnded)
   useEffect(() => {
-    if (!booking?.started_at) return;
+    if (!booking?.started_at || sessionEnded) return;
 
     const startMs = new Date(booking.started_at).getTime();
     const updateTimer = () => {
@@ -127,9 +134,43 @@ export default function Room() {
     };
 
     updateTimer();
-    const interval = setInterval(updateTimer, 1000);
-    return () => clearInterval(interval);
-  }, [booking?.started_at]);
+    timerIntervalRef.current = setInterval(updateTimer, 1000);
+    return () => {
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    };
+  }, [booking?.started_at, sessionEnded]);
+
+  // Handler for session:ended event or manual completion response
+  const handleSessionEnded = useCallback((data) => {
+    setSessionEnded(true);
+    setIsReadOnly(true);
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+    }
+    if (editorRef.current) {
+      try {
+        editorRef.current.updateOptions({ readOnly: true });
+      } catch (_) {}
+    }
+    setSettlementData(data);
+  }, []);
+
+  // End session handler (trigger settlement)
+  const handleEndSession = async () => {
+    try {
+      setEndingSession(true);
+      const res = await completeBooking(targetId);
+      setShowConfirmModal(false);
+      if (res.settlement) {
+        handleSessionEnded(res.settlement);
+      }
+    } catch (err) {
+      console.error('Failed to end session:', err);
+      alert(err.message || 'Failed to complete session');
+    } finally {
+      setEndingSession(false);
+    }
+  };
 
   // Socket.io room events: presence, chat, history
   useEffect(() => {
@@ -199,6 +240,7 @@ export default function Room() {
 
     socket.on('room:presence', handlePresence);
     socket.on('room:message', handleMessage);
+    socket.on('session:ended', handleSessionEnded);
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
 
@@ -206,14 +248,20 @@ export default function Room() {
       socket.emit('room:leave', { roomId: currentRoomId });
       socket.off('room:presence', handlePresence);
       socket.off('room:message', handleMessage);
+      socket.off('session:ended', handleSessionEnded);
       socket.off('connect', handleConnect);
       socket.off('disconnect', handleDisconnect);
     };
-  }, [booking?.room_id]);
+  }, [booking?.room_id, handleSessionEnded]);
 
   // Setup Monaco & Yjs
   const handleEditorDidMount = useCallback((editor) => {
     editorRef.current = editor;
+    if (isReadOnly || sessionEnded) {
+      try {
+        editor.updateOptions({ readOnly: true });
+      } catch (_) {}
+    }
     if (!booking?.room_id) return;
 
     const doc = new Y.Doc();
@@ -471,13 +519,14 @@ export default function Room() {
             🪙 <span>{booking.cost} cr will move when the session ends</span>
           </div>
 
-          {/* End Session Button (Disabled until Slice 6 Settlement) */}
+          {/* End Session Button (Slice 6) */}
           <button
-            className="btn btn-sm btn-disabled"
-            disabled
-            title="Settlement arrives in the next update"
+            className="btn btn-sm btn-danger end-session-btn"
+            onClick={() => setShowConfirmModal(true)}
+            disabled={endingSession || sessionEnded}
+            title="End session and settle credits"
           >
-            End session
+            {endingSession ? 'Settling...' : 'End session'}
           </button>
         </div>
       </header>
@@ -592,6 +641,90 @@ export default function Room() {
           </form>
         </div>
       </div>
+
+      {/* Confirm End Session Modal */}
+      {showConfirmModal && (
+        <div className="modal-backdrop">
+          <div className="modal-content confirm-modal">
+            <div className="modal-header">
+              <h3>End session?</h3>
+            </div>
+            <div className="modal-body">
+              <p>
+                End session and move <strong>{booking?.cost || 5} cr</strong> from{' '}
+                <strong>{booking?.learner?.name || 'Learner'}</strong> to{' '}
+                <strong>{booking?.mentor?.name || 'Mentor'}</strong>?
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowConfirmModal(false)}
+                disabled={endingSession}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={handleEndSession}
+                disabled={endingSession}
+              >
+                {endingSession ? 'Ending session...' : 'End session'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Settlement Result Modal */}
+      {settlementData && (
+        <div className="modal-backdrop">
+          <div className="modal-content settlement-modal">
+            <div className="settlement-modal-header">
+              <span className="settlement-modal-icon">🎉</span>
+              <h2>Session complete</h2>
+            </div>
+            <div className="settlement-modal-body">
+              <p className="settlement-credits-transfer-line">
+                <strong>{settlementData.amount} credits</strong> moved from{' '}
+                <strong>{settlementData.learner?.name || booking?.learner?.name}</strong> to{' '}
+                <strong>{settlementData.mentor?.name || booking?.mentor?.name}</strong>
+              </p>
+
+              {typeof settlementData.my_new_balance === 'number' && (
+                <div className="settlement-user-balance-box">
+                  <span className="balance-label">Your new balance:</span>
+                  <span className="balance-value">🪙 {settlementData.my_new_balance} cr</span>
+                </div>
+              )}
+
+              {settlementData.leveled_up && (
+                <div className="settlement-levelup-card">
+                  <div className="levelup-badge-tag">🌟 Level up!</div>
+                  <div className="levelup-text">
+                    <strong>{settlementData.mentor?.name || booking?.mentor?.name}</strong> reached{' '}
+                    <strong>Level {settlementData.mentor_level_after} ({settlementData.mentor_level_after === 3 ? 'Mentor' : 'Helper'})</strong>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer settlement-modal-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={() => navigate('/bookings')}
+              >
+                Back to My Bookings
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={() => navigate('/profile')}
+              >
+                View my ledger
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

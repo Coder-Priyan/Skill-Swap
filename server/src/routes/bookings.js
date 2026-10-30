@@ -10,7 +10,9 @@ import {
   getBookings,
   getBookingsSummary,
 } from '../bookings.js';
-import { emitToUser } from '../sockets.js';
+import { settleBooking } from '../ledger.js';
+import { emitToUser, emitToRoom } from '../sockets.js';
+import { snapshotAndCloseRoom } from '../yjs.js';
 
 const router = express.Router();
 
@@ -255,6 +257,131 @@ router.post('/:id/start', (req, res) => {
       console.error(`Error in POST /api/bookings/${req.params.id}/start:`, err);
     }
     res.status(status).json({ error: err.message || 'Failed to start booking' });
+  }
+});
+
+/**
+ * POST /api/bookings/:id/complete
+ * Atomically completes session, moves credits via ledger.js, snapshots code and closes room.
+ */
+router.post('/:id/complete', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { booking, settlement, alreadySettled } = settleBooking(id, req.currentUserId);
+
+    if (!alreadySettled) {
+      // 1. Snapshot code and close Yjs room
+      snapshotAndCloseRoom(booking.room_id, booking.id);
+
+      // 2. Base payload for room
+      const roomPayload = {
+        bookingId: booking.id,
+        roomId: booking.room_id,
+        amount: settlement.amount,
+        learner: { id: settlement.learner.id, name: settlement.learner.name },
+        mentor: { id: settlement.mentor.id, name: settlement.mentor.name },
+        mentor_level_before: settlement.mentor_level_before,
+        mentor_level_after: settlement.mentor_level_after,
+        leveled_up: settlement.leveled_up,
+      };
+
+      // 3. Emit session:ended to room and users
+      emitToRoom(booking.room_id, 'session:ended', roomPayload);
+
+      emitToUser(booking.learner_id, 'session:ended', {
+        ...roomPayload,
+        my_new_balance: settlement.learner.new_balance,
+      });
+
+      emitToUser(booking.mentor_id, 'session:ended', {
+        ...roomPayload,
+        my_new_balance: settlement.mentor.new_balance,
+      });
+
+      // 4. Emit ledger:updated to both users
+      emitToUser(booking.learner_id, 'ledger:updated', {
+        userId: booking.learner_id,
+        message: `Session completed - ${settlement.amount} credits transferred`,
+      });
+
+      emitToUser(booking.mentor_id, 'ledger:updated', {
+        userId: booking.mentor_id,
+        message: `Session completed - ${settlement.amount} credits earned`,
+      });
+    }
+
+    // Prepare response with privacy applied (only show caller's own new_balance)
+    const callerIsLearner = req.currentUserId === booking.learner_id;
+    const clientSettlement = {
+      amount: settlement.amount,
+      spend_entry_id: settlement.spend_entry_id,
+      earn_entry_id: settlement.earn_entry_id,
+      learner: {
+        id: settlement.learner.id,
+        name: settlement.learner.name,
+        ...(callerIsLearner ? { new_balance: settlement.learner.new_balance } : {}),
+      },
+      mentor: {
+        id: settlement.mentor.id,
+        name: settlement.mentor.name,
+        ...(!callerIsLearner ? { new_balance: settlement.mentor.new_balance } : {}),
+      },
+      mentor_level_before: settlement.mentor_level_before,
+      mentor_level_after: settlement.mentor_level_after,
+      leveled_up: settlement.leveled_up,
+    };
+
+    res.json({
+      booking,
+      settlement: clientSettlement,
+      alreadySettled,
+    });
+  } catch (err) {
+    const status = err.status || 500;
+    if (status >= 500) {
+      console.error(`Error in POST /api/bookings/${req.params.id}/complete:`, err);
+    }
+    res.status(status).json({ error: err.message || 'Failed to complete booking' });
+  }
+});
+
+/**
+ * GET /api/bookings/:id/notes
+ * Retrieve final code snapshot and language for participant
+ */
+router.get('/:id/notes', (req, res) => {
+  try {
+    const { id } = req.params;
+    const booking = db.prepare('SELECT learner_id, mentor_id FROM bookings WHERE id = ?').get(id);
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    if (booking.learner_id !== req.currentUserId && booking.mentor_id !== req.currentUserId) {
+      return res.status(403).json({ error: 'Forbidden: you are not a participant in this booking' });
+    }
+
+    const note = db.prepare(`
+      SELECT id, booking_id, summary, final_code, language, saved_at 
+      FROM session_notes 
+      WHERE booking_id = ? 
+      ORDER BY saved_at DESC LIMIT 1
+    `).get(id);
+
+    if (!note) {
+      return res.json({
+        booking_id: id,
+        summary: null,
+        final_code: '',
+        language: 'javascript',
+        saved_at: null,
+      });
+    }
+
+    res.json(note);
+  } catch (err) {
+    const status = err.status || 500;
+    res.status(status).json({ error: err.message || 'Failed to retrieve notes' });
   }
 });
 

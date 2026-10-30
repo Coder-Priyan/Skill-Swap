@@ -7,7 +7,7 @@ import peersRoutes, { getMetaHandler } from './routes/peers.js';
 import bookingsRoutes from './routes/bookings.js';
 import ledgerRoutes from './routes/ledger.js';
 import { initSockets } from './sockets.js';
-import { initYjs } from './yjs.js';
+import { initYjs, getOpenRoomCount } from './yjs.js';
 
 dotenv.config();
 
@@ -33,6 +33,7 @@ app.get('/api/health', (req, res) => {
     uptime: Math.floor(process.uptime()),
     timestamp: new Date().toISOString(),
     service: 'SkillSwap Backend',
+    open_rooms: getOpenRoomCount(),
   });
 });
 

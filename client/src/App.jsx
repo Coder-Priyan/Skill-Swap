@@ -162,6 +162,20 @@ export default function App() {
       refreshAllUserData();
     });
 
+    const unsubEnded = subscribeToSocketEvent('session:ended', (data) => {
+      const roomTarget = `/room/${data.bookingId}`;
+      if (!window.location.pathname.startsWith(roomTarget)) {
+        addToast({
+          type: 'success',
+          title: 'Session Ended! 🪙',
+          message: `${data.amount} credits moved from ${data.learner?.name || 'learner'} to ${data.mentor?.name || 'mentor'}`,
+          link: '/profile',
+          actionText: 'View ledger',
+        });
+      }
+      refreshAllUserData();
+    });
+
     return () => {
       unsubReq();
       unsubAcc();
@@ -169,6 +183,7 @@ export default function App() {
       unsubCan();
       unsubStarted();
       unsubLedger();
+      unsubEnded();
     };
   }, [addToast, refreshAllUserData]);
 
