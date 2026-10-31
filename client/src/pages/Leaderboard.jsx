@@ -97,11 +97,18 @@ export default function Leaderboard({ currentUser, onSelectPeer }) {
 
       {/* Empty State when 0 ranked mentors */}
       {totalRankedMentors === 0 && (
-        <section className="empty-state-box" style={{ padding: '3.5rem 1.5rem', textAlign: 'center', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', marginBottom: '2rem' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🏆</div>
-          <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>No mentors ranked yet</h3>
-          <p style={{ color: 'var(--text-secondary)', maxWidth: '420px', margin: '0 auto 1.5rem' }}>
-            Be the first to complete a live micro-mentorship session to take the #1 spot on the community leaderboard!
+        <section className="empty-state-box">
+          <div className="empty-state-icon" aria-hidden="true">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+              <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+              <path d="M4 22h16" />
+              <path d="M10 14.66V17c0 .55-.45 1-1 1H7v4h10v-4h-2c-.55 0-1-.45-1-1v-2.34c3.48-.63 6-3.64 6-7.23V4H4v5.43c0 3.59 2.52 6.6 6 7.23z" />
+            </svg>
+          </div>
+          <h3 className="empty-state-title">No mentors ranked yet</h3>
+          <p className="empty-state-desc">
+            Complete a live micro-mentorship session to earn platform credits and take the #1 spot on the community leaderboard.
           </p>
         </section>
       )}
@@ -119,9 +126,16 @@ export default function Leaderboard({ currentUser, onSelectPeer }) {
                   className={`podium-card place-${user.place} ${isFirst ? 'podium-winner' : ''} ${isCurrentUser ? 'is-me' : ''}`}
                 >
                   <div className="podium-medal">
-                    {user.place === 1 && '👑 1st'}
-                    {user.place === 2 && '🥈 2nd'}
-                    {user.place === 3 && '🥉 3rd'}
+                    {user.place === 1 && (
+                      <span className="rank-badge rank-1">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none" style={{ marginRight: '4px' }}>
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                        </svg>
+                        #1 Rank
+                      </span>
+                    )}
+                    {user.place === 2 && <span className="rank-badge rank-2">#2 Rank</span>}
+                    {user.place === 3 && <span className="rank-badge rank-3">#3 Rank</span>}
                   </div>
 
                   <div
@@ -150,7 +164,14 @@ export default function Leaderboard({ currentUser, onSelectPeer }) {
                     <div className="p-stat-divider"></div>
                     <div className="p-stat">
                       <span className="p-stat-val">
-                        {user.rating_avg !== null ? `⭐ ${user.rating_avg}` : '—'}
+                        {user.rating_avg !== null ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                            </svg>
+                            {user.rating_avg}
+                          </span>
+                        ) : '—'}
                       </span>
                       <span className="p-stat-lbl">({user.rating_count})</span>
                     </div>
@@ -234,7 +255,13 @@ export default function Leaderboard({ currentUser, onSelectPeer }) {
                         )}
                       </td>
                       <td className="cell-num">
-                        <span className="earned-badge">🪙 {user.total_earned} cr</span>
+                        <span className="earned-badge">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px' }}>
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 6v12M8 10h8M8 14h6" />
+                          </svg>
+                          {user.total_earned} cr
+                        </span>
                       </td>
                     </tr>
                   );
@@ -248,27 +275,37 @@ export default function Leaderboard({ currentUser, onSelectPeer }) {
       {/* Current User Standing Card */}
       {my_rank ? (
         <section className="my-standing-banner">
-          <div className="standing-icon">🎯</div>
+          <div className="standing-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <circle cx="12" cy="12" r="6" />
+              <circle cx="12" cy="12" r="2" />
+            </svg>
+          </div>
           <div className="standing-content">
             <div className="standing-title">
               Your Current Standing: <strong>#{my_rank.rank}</strong> out of {totalRankedMentors} mentors
             </div>
             <div className="standing-details">
               You have completed <strong>{my_rank.sessions_as_mentor}</strong> sessions as mentor
-              {my_rank.rating_avg !== null ? ` with a ⭐ ${my_rank.rating_avg} average rating.` : '.'}
+              {my_rank.rating_avg !== null ? ` with an average rating of ${my_rank.rating_avg} stars.` : '.'}
               {' '}Total mentorship earnings: <strong>{my_rank.total_earned} cr</strong>.
             </div>
           </div>
         </section>
       ) : (
         <section className="my-standing-banner not-ranked">
-          <div className="standing-icon">🚀</div>
+          <div className="standing-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+          </div>
           <div className="standing-content">
             <div className="standing-title">
-              Help your first peer to join the leaderboard
+              Complete your first session to rank on the leaderboard
             </div>
             <div className="standing-details">
-              Accept mentorship requests on your skills to earn platform credits, collect 5-star reviews, and climb the community ranks!
+              Accept mentorship requests on your skills to earn platform credits, collect 5-star reviews, and join the ranked community mentors.
             </div>
           </div>
         </section>

@@ -144,7 +144,11 @@ export default function BookingCard({
         <div className="booking-timestamp-info">
           {booking.status === 'completed' && (
             <div className="credits-moved-badge">
-              🪙 {booking.cost} cr moved
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 6v12M8 10h8M8 14h6" />
+              </svg>
+              <span>{booking.cost} cr settled</span>
             </div>
           )}
           {booking.completed_at && (

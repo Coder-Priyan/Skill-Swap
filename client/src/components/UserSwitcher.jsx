@@ -25,6 +25,7 @@ export default function UserSwitcher({ users, currentUserId, onUserChange }) {
         className="user-switcher-select"
         value={currentUserId || ''}
         onChange={handleChange}
+        aria-label="Active demo user persona"
       >
         {users.map((u) => (
           <option key={u.id} value={u.id}>
@@ -32,6 +33,9 @@ export default function UserSwitcher({ users, currentUserId, onUserChange }) {
           </option>
         ))}
       </select>
+      <svg className="user-switcher-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <polyline points="6 9 12 15 18 9" />
+      </svg>
     </div>
   );
 }

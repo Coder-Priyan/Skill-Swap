@@ -662,6 +662,30 @@ export default function Directory({ currentUserId, currentProfile, onBookingCrea
                 }
               }}
             />
+            <div className="smart-prompt-suggestions">
+              <span className="smart-prompt-label">Sample challenges:</span>
+              <button
+                type="button"
+                className="smart-prompt-chip"
+                onClick={() => setProblemText("My React component re-renders too much, need help in Hindi this evening")}
+              >
+                React re-renders (Hindi)
+              </button>
+              <button
+                type="button"
+                className="smart-prompt-chip"
+                onClick={() => setProblemText("Setting up strict tsconfig, discriminating unions and complex generics")}
+              >
+                TypeScript generics
+              </button>
+              <button
+                type="button"
+                className="smart-prompt-chip"
+                onClick={() => setProblemText("Troubleshooting SQLite WAL mode concurrency and transaction isolation")}
+              >
+                SQLite WAL concurrency
+              </button>
+            </div>
           </div>
 
           {/* Languages Selector */}
@@ -683,8 +707,11 @@ export default function Directory({ currentUserId, currentProfile, onBookingCrea
                   >
                     {isSelected ? '✓ ' : ''}{lang}
                     {isDetected && (
-                      <span className="chip-detected-badge" style={{ marginLeft: '4px', fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>
-                        ⚡ detected
+                      <span className="chip-detected-badge">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none" style={{ marginRight: '3px' }}>
+                          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                        </svg>
+                        detected
                       </span>
                     )}
                   </button>

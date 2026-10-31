@@ -34,7 +34,10 @@ export default function PeerCard({ peer, onBookClick }) {
       {/* Best Match Ribbon */}
       {isSmartMatch && peer.is_best_match && (
         <div className="best-match-ribbon" title="Top deterministic match for your criteria">
-          <span className="ribbon-star">★</span> BEST MATCH
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none" style={{ marginRight: '4px' }}>
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+          BEST MATCH
         </div>
       )}
 
@@ -147,7 +150,9 @@ export default function PeerCard({ peer, onBookClick }) {
           </div>
 
           <div className="rating-stars-row">
-            <span className="star-icon">★</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none" className="star-icon" style={{ marginRight: '3px' }}>
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
             <span className="rating-number">
               {peer.rating_avg !== null ? peer.rating_avg.toFixed(1) : 'New'}
             </span>

@@ -155,7 +155,7 @@ export default function App() {
     const unsubAcc = subscribeToSocketEvent('booking:accepted', (data) => {
       addToast({
         type: 'accepted',
-        title: 'Session Accepted! 🎉',
+        title: 'Session Accepted',
         message: `${data.booking?.mentor?.name || 'Your mentor'} accepted your booking for "${data.booking?.topic}"`,
         link: '/bookings',
         actionText: 'View booking',
@@ -188,7 +188,7 @@ export default function App() {
       if (!window.location.pathname.startsWith(roomTarget)) {
         addToast({
           type: 'success',
-          title: 'Session Live! 🔴',
+          title: 'Session Live',
           message: data.message || 'Participant joined the room',
           link: roomTarget,
           actionText: 'Join now',
@@ -206,7 +206,7 @@ export default function App() {
       if (!window.location.pathname.startsWith(roomTarget)) {
         addToast({
           type: 'success',
-          title: 'Session Ended! 🪙',
+          title: 'Session Settled',
           message: `${data.amount} credits moved from ${data.learner?.name || 'learner'} to ${data.mentor?.name || 'mentor'}`,
           link: '/profile',
           actionText: 'View ledger',
@@ -218,7 +218,7 @@ export default function App() {
     const unsubRated = subscribeToSocketEvent('booking:rated', (data) => {
       addToast({
         type: 'success',
-        title: 'Session Rated! ⭐',
+        title: 'Session Rated',
         message: data.message || `${data.learnerName || 'Your learner'} rated the session ${data.rating} stars!`,
         link: `/sessions/${data.bookingId}`,
         actionText: 'View notes',
@@ -229,7 +229,7 @@ export default function App() {
     const unsubDemoReset = subscribeToSocketEvent('demo:reset', () => {
       addToast({
         type: 'info',
-        title: 'Demo Data Reset 🔄',
+        title: 'Demo Data Reset',
         message: 'Demo data was reset to pristine seed state.',
         link: '/',
       });
@@ -302,16 +302,18 @@ export default function App() {
       {/* Top bar / App Shell */}
       <header className="topbar">
         <div className="topbar-left">
-          <NavLink to="/" className="brand-logo" title="SkillSwap — Micro-Mentorship Hub">
-            <span className="brand-logo-icon">
+          <NavLink to="/" className="brand-logo" title="SkillSwap — Peer-to-Peer Micro-Mentorship">
+            <span className="brand-logo-icon" aria-hidden="true">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="4" />
-                <line x1="1.05" y1="12" x2="7" y2="12" />
-                <line x1="17.01" y1="12" x2="22.96" y2="12" />
+                <polyline points="16 3 21 3 21 8" />
+                <line x1="4" y1="20" x2="21" y2="3" />
+                <polyline points="21 16 21 21 16 21" />
+                <line x1="15" y1="15" x2="21" y2="21" />
+                <line x1="4" y1="4" x2="9" y2="9" />
               </svg>
             </span>
             <span className="brand-text">SkillSwap</span>
-            <span className="brand-pill">Public</span>
+            <span className="brand-pill">Platform</span>
           </NavLink>
 
           <nav>
@@ -379,7 +381,10 @@ export default function App() {
               className={`balance-chip ${currentProfile.reserved_credits > 0 ? 'has-reserved' : ''}`}
               title={`Total balance: ${currentProfile.balance} cr | Available: ${currentProfile.available_credits} cr | Reserved: ${currentProfile.reserved_credits || 0} cr`}
             >
-              <span className="balance-pulse-dot" />
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="balance-coin-svg">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 6v12M8 10h8M8 14h6" />
+              </svg>
               <span className="balance-amount">{currentProfile.balance} cr</span>
               {currentProfile.reserved_credits > 0 && (
                 <span className="balance-reserved-chip">

@@ -460,7 +460,12 @@ export default function Room() {
   if (sessionEnded) {
     return (
       <div className="card room-notice-card">
-        <span className="notice-icon">🏁</span>
+        <span className="notice-icon" aria-hidden="true">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+            <line x1="4" y1="22" x2="4" y2="15" />
+          </svg>
+        </span>
         <h2>This session has ended</h2>
         <p>The code and mentorship session have completed and the room is closed.</p>
         <Link to="/bookings" className="btn btn-primary" style={{ marginTop: '1.25rem' }}>
@@ -473,7 +478,12 @@ export default function Room() {
   if (error || !booking) {
     return (
       <div className="card room-notice-card">
-        <span className="notice-icon">🔒</span>
+        <span className="notice-icon" aria-hidden="true">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+        </span>
         <h2>Access Restricted</h2>
         <p>{error || 'Room unavailable'}</p>
         <Link to="/bookings" className="btn btn-secondary" style={{ marginTop: '1.25rem' }}>
@@ -516,7 +526,12 @@ export default function Room() {
               <span className="chip-name">{booking.learner.name}</span>
               <span className="chip-role">Learner</span>
               {voicePeerIds.includes(booking.learner_id) && (
-                <span className="chip-voice-icon" title={`${booking.learner.name} is in voice call`} aria-label="In voice">🎙️</span>
+                <span className="chip-voice-icon" title={`${booking.learner.name} is in voice call`} aria-label="In voice">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                  </svg>
+                </span>
               )}
               <span className={`presence-dot ${isLearnerPresent ? 'online' : 'offline'}`} />
             </div>
@@ -529,7 +544,12 @@ export default function Room() {
               <span className="chip-name">{booking.mentor.name}</span>
               <span className="chip-role">Mentor</span>
               {voicePeerIds.includes(booking.mentor_id) && (
-                <span className="chip-voice-icon" title={`${booking.mentor.name} is in voice call`} aria-label="In voice">🎙️</span>
+                <span className="chip-voice-icon" title={`${booking.mentor.name} is in voice call`} aria-label="In voice">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                  </svg>
+                </span>
               )}
               <span className={`presence-dot ${isMentorPresent ? 'online' : 'offline'}`} />
             </div>
@@ -609,7 +629,7 @@ export default function Room() {
               language={selectedLanguage}
               options={{
                 fontSize: 14,
-                fontFamily: 'Fira Code, Consolas, Monaco, monospace',
+                fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
                 wordWrap: 'on',
