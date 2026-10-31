@@ -31,3 +31,4 @@ git-reflog.txt
 numstat.txt
 report_outputs/
 
+fresh_*.json
