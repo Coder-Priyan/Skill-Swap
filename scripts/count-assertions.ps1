@@ -9,7 +9,8 @@ foreach ($line in $lines) {
             $counts[$currentFile] = 0
         }
     }
-    if ($line -match 'PASS|✓') {
+    # Match standalone \bPASS\b only, explicitly excluding summary and suite footer lines
+    if ($line -match '\bPASS\b' -and $line -notmatch '(?i)summary|suite|exited') {
         if ($currentFile -ne "unknown") {
             $counts[$currentFile]++
         }
@@ -19,5 +20,5 @@ foreach ($line in $lines) {
 Write-Output "| Test File | Assertions / Passes | Status |"
 Write-Output "| :--- | :---: | :--- |"
 foreach ($k in $counts.Keys) {
-    Write-Output "| \`server/tests/$k\` | $($counts[$k]) | ✅ PASS |"
+    Write-Output "| ``server/tests/$k`` | $($counts[$k]) | ✅ PASS |"
 }

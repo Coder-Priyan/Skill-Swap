@@ -8,8 +8,10 @@ This document outlines the exact step-by-step walkthrough for a 4-minute live ha
 
 Complete these 7 steps before stepping on stage or presenting to judges:
 
-1. **Launch Demo Server**:
-   ```bash
+1. **Kill Stale Processes & Launch Demo Server**:
+   Kill any old node processes on ports 4000/5173/5174 before `npm run demo:prod`, and confirm `/api/health` uptime is a few seconds:
+   ```powershell
+   Get-NetTCPConnection -LocalPort 4000,4001,5173,5174 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }
    npm run demo:prod
    ```
    *Resets the SQLite database to deterministic seed data and boots the single-process production server listening on `0.0.0.0:4000` with static SPA assets.*
@@ -60,24 +62,32 @@ Complete these 7 steps before stepping on stage or presenting to judges:
 - **Talking Points**:
   - *"Finding the right mentor usually means guessing or relying on black-box LLMs that hallucinate. We built Smart Match: a 100% deterministic, rule-based matching engine running on pure server logic with zero external API keys."*
 - **Actions in Window 1 (Tanvi)**:
-  1. Click **"✨ Smart Match"** tab.
+  1. Click **"✨ Smart Match"** tab (default directory mode).
   2. In the "Describe your problem" box, paste the exact problem:
      > `My React component re-renders too much, need help in Hindi this evening`
-  3. Select **Time of Day: Evening** (or keep Default) and press **Ctrl+Enter** (or click **"Find my best match"**).
-  4. **Expected Result**:
-     - **Detected Topics**: `React` chip automatically detected via boundary-aware keyword dictionary.
-     - **Best Match**: **Priya Sharma** (`usr_pixelpriya`) ranks **#1** with a **100% match** score and green **"★ BEST MATCH"** badge!
-     - **Reason Chips**:
-       - `✓ React` (matched topic)
-       - `✓ English` (matched preferred language)
-       - `✓ Mon slot` / `✓ Evening slot` (matched time window)
+  3. **Auto-Detection & Evening Daypart**:
+     - Notice the **Hindi** language chip is automatically detected from problem text and highlighted with a **`⚡ detected`** badge.
+     - Select **Time of Day: Evening** (evening daypart must be chosen to evaluate evening availability slots).
+     - Press **Ctrl+Enter** (or click **"Find my best match"**).
+  4. **Expected Real Top 3 Results (Deterministic)**:
+     - **#1 Priya Sharma (`usr_pixelpriya`)** — **100% Match** (`★ BEST MATCH`)
+       - `✓ React` (topic match)
+       - `✓ Hindi` (detected spoken language matched)
+       - `✓ Mon slot` (evening availability matched)
        - `✓ Online now` (active in system)
        - `✓ Level 3 Mentor` (mentor level 3 >= learner level 1)
        - `✓ 4.8 stars (11)` (top rating)
-  5. Click **"How is this scored?"** expander:
-     - Shows real-time breakdown table with mathematical transparency: Topic (45 pts), Language (15 pts), Availability (15 pts), Online (10 pts), Level (10 pts), Rating (5 pts).
+     - **#2 Rahul Nair (`usr_devdynamo`)** — **93% Match**
+       - `✓ React`, `✓ Hindi`, `✓ Mon slot`, `✓ Online now`, `✓ Level 1 Newcomer`, `✓ 5.0 stars (1)`
+     - **#3 Rohan Das (`usr_shadersorcerer`)** — **75% Match**
+       - `✓ React`, `✕ Hindi` (does not speak Hindi), `✓ Tue slot`, `✓ Online now`, `✓ Level 1 Newcomer`, `✕ No ratings yet`
+  5. Click **"How is this scored?"** expander on Priya's card:
+     - Shows real-time mathematical breakdown: Topic (45/45), Language (15/15), Availability (15/15), Online (10/10), Level (10/10), Rating (5/5) = 100/100.
   6. Click **"Request Session"** on Priya’s card:
-     - Notice **BookModal opens pre-filled**: Topic is `React`, problem description is pre-filled, and the suggested evening slot is automatically selected!
+     - Notice **BookModal opens pre-filled**: Topic is `React`, problem description is pre-filled, and Priya's suggested evening slot is automatically selected!
+
+> [!NOTE]
+> Ensure **"Reset Demo"** (`npm run demo:reset` or in-app navbar button) has been executed prior to starting the walkthrough so seed balances, slots, and ratings match these exact scores.
 
 ### Phase 2: Instant Booking & Credit Reservation (1:10 – 1:50)
 - **Talking Points**:

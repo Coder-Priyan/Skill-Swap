@@ -109,6 +109,52 @@ export function detectTopics(problemText = '', availableTopics = []) {
 }
 
 /**
+ * PURE FUNCTION: Detects spoken languages mentioned in problem text.
+ * Case-insensitive matching with word boundaries against knownLanguages list from DB.
+ * Languages should not match substrings of other words (e.g. "Hindi" inside "hindsight").
+ * 
+ * @param {string} problemText
+ * @param {string[]} knownLanguages - List of canonical language names from the DB
+ * @returns {string[]}
+ */
+export function detectLanguages(problemText = '', knownLanguages = []) {
+  if (!problemText || typeof problemText !== 'string' || !knownLanguages || !Array.isArray(knownLanguages)) {
+    return [];
+  }
+
+  const text = problemText.trim();
+  if (!text) return [];
+
+  const hits = [];
+
+  for (const lang of knownLanguages) {
+    if (!lang || typeof lang !== 'string') continue;
+    const trimmed = lang.trim();
+    if (!trimmed) continue;
+
+    const escaped = trimmed.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+    // Word boundary regex: ensure not preceded or followed by word characters
+    const rx = new RegExp(`(?<=[^a-zA-Z0-9_]|^)${escaped}(?=[^a-zA-Z0-9_]|$)`, 'ig');
+    const match = rx.exec(text);
+    if (match) {
+      hits.push({ lang: trimmed, index: match.index });
+    }
+  }
+
+  // Preserve order of appearance in text
+  hits.sort((a, b) => a.index - b.index);
+
+  // Return unique canonical names
+  const result = [];
+  for (const h of hits) {
+    if (!result.some((r) => r.toLowerCase() === h.lang.toLowerCase())) {
+      result.push(h.lang);
+    }
+  }
+  return result;
+}
+
+/**
  * PURE FUNCTION: Scores a mentor against learner preferences.
  * 
  * @param {object} input
@@ -116,6 +162,7 @@ export function detectTopics(problemText = '', availableTopics = []) {
  * @param {object} input.learner - Learner object with level, languages
  * @param {string[]} [input.usedTopics] - Topics used for matching
  * @param {string[]} [input.languages] - Languages used for matching
+ * @param {string[]} [input.detectedLanguages] - Explicitly detected languages from query text
  * @param {number|string} [input.day] - Optional preferred day (0-6)
  * @param {string} [input.daypart] - Optional preferred daypart (morning|afternoon|evening)
  * @param {boolean} [input.onlineNow] - Optional online preference
@@ -126,6 +173,7 @@ export function scoreMentor({
   learner = {},
   usedTopics = [],
   languages = [],
+  detectedLanguages = [],
   day,
   daypart,
   onlineNow,
@@ -178,8 +226,27 @@ export function scoreMentor({
   // 2. Language component (Weight: 15)
   // Always signaled; defaults to learner's preferred languages
   const targetLangs = (languages || []).map((l) => String(l).toLowerCase().trim());
-  const matchedLangs = targetLangs.filter((tl) => mentorLangs.includes(tl));
-  const hasLangMatch = matchedLangs.length > 0;
+  const detectedLangs = (detectedLanguages || []).map((l) => String(l).toLowerCase().trim());
+
+  let hasLangMatch = false;
+  let primaryLang = null;
+
+  if (detectedLangs.length > 0) {
+    // If specific languages were detected in query, mentor must speak at least one detected language
+    const matchedDetected = detectedLangs.filter((dl) => mentorLangs.includes(dl));
+    if (matchedDetected.length > 0) {
+      hasLangMatch = true;
+      primaryLang = matchedDetected[0].charAt(0).toUpperCase() + matchedDetected[0].slice(1);
+    }
+  } else {
+    // Standard preference matching in targetLangs order
+    const matchedLangs = targetLangs.filter((tl) => mentorLangs.includes(tl));
+    if (matchedLangs.length > 0) {
+      hasLangMatch = true;
+      primaryLang = matchedLangs[0].charAt(0).toUpperCase() + matchedLangs[0].slice(1);
+    }
+  }
+
   const langPoints = hasLangMatch ? MATCH_WEIGHTS.language : 0;
 
   breakdown.push({
@@ -190,17 +257,18 @@ export function scoreMentor({
     signaled: true,
     ok: hasLangMatch,
     detail: hasLangMatch
-      ? `Speaks ${matchedLangs.map((l) => l.charAt(0).toUpperCase() + l.slice(1)).join(', ')}`
+      ? `Speaks ${primaryLang}`
       : `Does not share preferred languages`,
   });
 
   if (hasLangMatch) {
-    const primaryLang = matchedLangs[0].charAt(0).toUpperCase() + matchedLangs[0].slice(1);
     reasons.push({ key: 'language', label: primaryLang, ok: true });
   } else {
-    const requested = targetLangs.length > 0
-      ? targetLangs.map((l) => l.charAt(0).toUpperCase() + l.slice(1)).join(', ')
-      : 'Languages';
+    const requested = detectedLangs.length > 0
+      ? detectedLangs.map((l) => l.charAt(0).toUpperCase() + l.slice(1)).join(', ')
+      : targetLangs.length > 0
+        ? targetLangs.map((l) => l.charAt(0).toUpperCase() + l.slice(1)).join(', ')
+        : 'Languages';
     reasons.push({ key: 'language', label: requested, ok: false });
   }
 

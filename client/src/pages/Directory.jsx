@@ -5,8 +5,21 @@ import BookModal from '../components/BookModal';
 import { subscribeToSocketEvent } from '../socket';
 
 export default function Directory({ currentUserId, currentProfile, onBookingCreated }) {
-  // Mode switch: 'browse' (existing) | 'smart' (Smart Match)
-  const [mode, setMode] = useState('browse');
+  // Mode switch: 'smart' (Smart Match default) | 'browse' (Browse)
+  const [mode, setMode] = useState(() => {
+    try {
+      return sessionStorage.getItem('skillswap_directory_mode') || 'smart';
+    } catch (_) {
+      return 'smart';
+    }
+  });
+
+  const handleModeChange = (newMode) => {
+    setMode(newMode);
+    try {
+      sessionStorage.setItem('skillswap_directory_mode', newMode);
+    } catch (_) {}
+  };
 
   // Metadata state from /api/meta
   const [meta, setMeta] = useState(null);
@@ -87,6 +100,39 @@ export default function Directory({ currentUserId, currentProfile, onBookingCrea
       }
     }
   }, [currentProfile]);
+
+  // Detect spoken languages mentioned in problemText
+  const detectedProblemLangs = React.useMemo(() => {
+    if (!problemText || !meta?.languages) return [];
+    const text = problemText.trim();
+    if (!text) return [];
+    const found = [];
+    for (const lang of meta.languages) {
+      const escaped = lang.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const rx = new RegExp(`(?<=[^a-zA-Z0-9_]|^)${escaped}(?=[^a-zA-Z0-9_]|$)`, 'i');
+      if (rx.test(text)) {
+        found.push(lang);
+      }
+    }
+    return found;
+  }, [problemText, meta?.languages]);
+
+  // Preselect detected language chips automatically
+  useEffect(() => {
+    if (detectedProblemLangs.length > 0) {
+      setSmartLanguages((prev) => {
+        const next = [...prev];
+        let added = false;
+        for (const dl of detectedProblemLangs) {
+          if (!next.includes(dl)) {
+            next.push(dl);
+            added = true;
+          }
+        }
+        return added ? next : prev;
+      });
+    }
+  }, [detectedProblemLangs]);
 
   // Fetch peers for Browse mode
   const fetchPeers = useCallback(() => {
@@ -323,49 +369,50 @@ export default function Directory({ currentUserId, currentProfile, onBookingCrea
 
   return (
     <div className="directory-page">
-      {/* Page Header */}
-      <div className="page-header">
-        <h1 className="page-title">Find Peers & Mentors</h1>
-        <p className="page-subtitle">
-          Connect with experienced developers for 30-minute 1-on-1 pairing sessions. Earn credits by helping, spend credits to learn.
-        </p>
-      </div>
+      {/* GitHub Repository Directory Header */}
+      <div className="gh-page-header">
+        <div className="gh-title-col">
+          <div className="gh-title-row">
+            <h1 className="gh-page-heading">Mentors & Peers</h1>
+            <span className="gh-badge-counter">{peers.length} active</span>
+          </div>
+          <p className="gh-page-desc">
+            Peer-to-peer technical pairing and code reviews. Standard rate: 5 cr / 30m session.
+          </p>
+        </div>
 
-      {/* Mode Switcher Tabs (Browse vs Smart Match) */}
-      <div className="directory-mode-switch" role="tablist" aria-label="Directory view modes">
-        <button
-          type="button"
-          role="tab"
-          id="mode-tab-browse"
-          aria-selected={mode === 'browse'}
-          className={`mode-tab-btn ${mode === 'browse' ? 'active' : ''}`}
-          onClick={() => setMode('browse')}
-        >
-          <svg
-            width="15"
-            height="15"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
+        {/* GitHub Segmented Control */}
+        <div className="gh-segmented-control" role="tablist" aria-label="Directory view modes">
+          <button
+            type="button"
+            role="tab"
+            id="mode-tab-browse"
+            aria-selected={mode === 'browse'}
+            className={`gh-segment-btn ${mode === 'browse' ? 'active' : ''}`}
+            onClick={() => handleModeChange('browse')}
           >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <span>Browse</span>
-        </button>
-        <button
-          type="button"
-          role="tab"
-          id="mode-tab-smart"
-          aria-selected={mode === 'smart'}
-          className={`mode-tab-btn ${mode === 'smart' ? 'active' : ''}`}
-          onClick={() => setMode('smart')}
-        >
-          <span className="smart-sparkle-icon">✨</span>
-          <span>Smart Match</span>
-          <span className="mode-badge-new">DETERMINISTIC</span>
-        </button>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <span>Browse</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="mode-tab-smart"
+            aria-selected={mode === 'smart'}
+            className={`gh-segment-btn ${mode === 'smart' ? 'active' : ''}`}
+            onClick={() => handleModeChange('smart')}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+            </svg>
+            <span>Smart Match</span>
+            <span className="gh-subtle-badge">Deterministic</span>
+          </button>
+        </div>
       </div>
 
       {/* ============================================================ */}
@@ -625,14 +672,21 @@ export default function Directory({ currentUserId, currentProfile, onBookingCrea
             <div className="chip-group">
               {meta?.languages?.map((lang) => {
                 const isSelected = smartLanguages.includes(lang);
+                const isDetected = detectedProblemLangs.includes(lang) || smartQueryMeta?.query?.detected_languages?.includes(lang);
                 return (
                   <button
                     key={lang}
                     type="button"
                     className={`chip topic-chip-btn ${isSelected ? 'active' : ''}`}
                     onClick={() => handleToggleLanguage(lang)}
+                    title={isDetected ? 'Detected from problem description' : ''}
                   >
                     {isSelected ? '✓ ' : ''}{lang}
+                    {isDetected && (
+                      <span className="chip-detected-badge" style={{ marginLeft: '4px', fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>
+                        ⚡ detected
+                      </span>
+                    )}
                   </button>
                 );
               })}

@@ -2,7 +2,7 @@ import express from 'express';
 import { db } from '../db.js';
 import { MATCH_WEIGHTS } from '../config.js';
 import { calculateLevel } from '../config.js';
-import { detectTopics, scoreMentor, rankMatchResults } from '../match.js';
+import { detectTopics, detectLanguages, scoreMentor, rankMatchResults } from '../match.js';
 import { fetchHydratedPeers } from './peers.js';
 
 const router = express.Router();
@@ -71,12 +71,14 @@ router.get('/', (req, res) => {
         if (trimmed) knownLangMap.set(trimmed.toLowerCase(), trimmed);
       });
     }
+    const allKnownLanguages = Array.from(knownLangMap.values());
+    const detected_languages = detectLanguages(problem, allKnownLanguages);
 
     const learnerDefaultLangs = learnerUser.languages
       ? learnerUser.languages.split(',').map((s) => s.trim())
       : ['English'];
 
-    let targetLanguages = learnerDefaultLangs;
+    let targetLanguages = [];
     const rawLang = req.query.language;
     if (rawLang !== undefined && rawLang !== null && rawLang !== '') {
       const langTokens = Array.isArray(rawLang)
@@ -91,6 +93,15 @@ router.get('/', (req, res) => {
       }
 
       targetLanguages = requestedLangs.map((l) => knownLangMap.get(l.toLowerCase()) || l);
+    } else {
+      // (a) Merge detected languages into the language preference (detected ones first, then learner's profile languages)
+      const merged = [...detected_languages];
+      for (const l of learnerDefaultLangs) {
+        if (!merged.some((m) => m.toLowerCase() === l.toLowerCase())) {
+          merged.push(l);
+        }
+      }
+      targetLanguages = merged.length > 0 ? merged : ['English'];
     }
 
     // 4. Validate day
@@ -140,6 +151,7 @@ router.get('/', (req, res) => {
         learner,
         usedTopics: used_topics,
         languages: targetLanguages,
+        detectedLanguages: detected_languages,
         day,
         daypart,
         onlineNow,
@@ -173,6 +185,7 @@ router.get('/', (req, res) => {
         detected_topics,
         used_topics,
         languages: targetLanguages,
+        detected_languages,
         day: day !== undefined ? day : null,
         daypart: daypart || null,
         onlineNow,

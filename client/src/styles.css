@@ -1011,21 +1011,21 @@ body {
 }
 
 /* Peer Grid */
+/* Peer Grid — Authentic GitHub 2-Column Wide Developer Cards */
 .peer-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
+  gap: 1rem;
 }
 
-/* Peer Card */
-/* Peer Card — Authentic GitHub Repository Card Style */
+/* Peer Card — Authentic GitHub Developer / Repository Card Style */
 .peer-card {
   display: flex;
   flex-direction: column;
-  padding: 1.25rem;
+  padding: 16px;
   background-color: var(--bg-card);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-sm);
+  border-radius: 6px;
   transition: border-color 0.12s ease;
   position: relative;
 }
@@ -1041,8 +1041,8 @@ body {
 .peer-card-header {
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
-  margin-bottom: 0.65rem;
+  gap: 12px;
+  margin-bottom: 8px;
 }
 
 .peer-avatar-wrap {
@@ -1051,24 +1051,24 @@ body {
 }
 
 .peer-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius-sm);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 14px;
   border: 1px solid var(--border-subtle);
 }
 
 .peer-online-pulse {
   position: absolute;
-  bottom: -2px;
-  right: -2px;
-  width: 10px;
-  height: 10px;
+  bottom: -1px;
+  right: -1px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background-color: #2ea043;
   border: 2px solid #161b22;
@@ -1079,40 +1079,38 @@ body {
   min-width: 0;
 }
 
-.peer-name-row {
+.peer-title-line {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .peer-name {
-  font-size: 1rem;
+  font-size: 15px;
   font-weight: 600;
   line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .peer-name-link {
-  color: var(--accent-blue);
+  color: #58a6ff;
   text-decoration: none;
   transition: color 0.12s ease;
 }
 
 .peer-name-link:hover {
   text-decoration: underline;
-  color: var(--accent-blue-hover);
+  color: #79c0ff;
 }
 
 .online-tag {
   font-size: 11px;
   font-weight: 500;
   color: #3fb950;
-  background: rgba(46, 160, 67, 0.15);
+  background: rgba(46, 160, 67, 0.12);
   padding: 0 6px;
   border-radius: 20px;
-  border: 1px solid rgba(46, 160, 67, 0.4);
+  border: 1px solid rgba(46, 160, 67, 0.35);
   line-height: 18px;
 }
 
@@ -1122,26 +1120,32 @@ body {
   font-size: 12px;
 }
 
-.peer-badges-stack {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex-shrink: 0;
+.peer-role-badge {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 20px;
+  padding: 0 7px;
+  line-height: 18px;
 }
 
 .level-relation-tag {
   font-size: 11px;
   font-weight: 500;
-  padding: 1px 7px;
+  padding: 0 7px;
   border-radius: 20px;
   border: 1px solid var(--border-default);
   background: var(--bg-elevated);
   color: var(--text-secondary);
+  line-height: 18px;
 }
 
 .tag-higher {
   color: #a371f7;
   border-color: rgba(163, 113, 247, 0.3);
+  background: rgba(163, 113, 247, 0.1);
 }
 
 .tag-same {
@@ -1152,7 +1156,7 @@ body {
   color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.5;
-  margin: 0.35rem 0 0.85rem;
+  margin: 6px 0 10px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -1160,77 +1164,67 @@ body {
 }
 
 .peer-skills-section {
-  margin-bottom: 0.85rem;
+  margin-bottom: 12px;
 }
 
 .peer-tag-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: 6px;
 }
 
-/* GitHub Topic Pills */
+/* Authentic GitHub Topic Tags */
+.topic-tag,
 .peer-skill-tag {
-  padding: 2px 8px;
+  display: inline-block;
+  padding: 2px 10px;
   background: rgba(56, 139, 253, 0.1);
-  border: 1px solid rgba(56, 139, 253, 0.2);
-  border-radius: 20px;
+  border: 1px solid rgba(56, 139, 253, 0.15);
+  border-radius: 2em;
   font-size: 12px;
   color: #58a6ff;
   font-weight: 500;
+  line-height: 18px;
+  text-decoration: none;
   transition: all 0.12s ease;
 }
 
+.topic-tag:hover,
 .peer-skill-tag:hover {
-  background: #1f6feb;
-  color: #ffffff;
+  background: rgba(56, 139, 253, 0.2);
+  color: #79c0ff;
 }
 
-.peer-meta-grid {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  padding: 0.5rem 0;
-  margin-bottom: 0.75rem;
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.peer-meta-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.meta-icon {
-  font-size: 12px;
-  opacity: 0.8;
-}
-
-.meta-val {
-  color: var(--text-secondary);
-}
-
+/* GitHub Repo Card Footer: Language Dot, Rating, Rate & Action Button */
 .peer-card-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 12px;
   margin-top: auto;
-  padding-top: 0.5rem;
+  padding-top: 10px;
   border-top: 1px solid var(--border-subtle);
 }
 
-.peer-rating-block {
+.peer-meta-left {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.peer-lang-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .rating-stars-row {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 4px;
   font-size: 12px;
 }
 
@@ -1249,30 +1243,36 @@ body {
   color: var(--text-secondary);
 }
 
-.mentored-badge {
+.peer-rate-tag {
+  font-family: var(--font-mono);
   font-size: 12px;
   color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.peer-action-right {
+  flex-shrink: 0;
 }
 
 .peer-book-btn {
-  padding: 3px 12px;
-  font-size: 12px;
+  padding: 4px 14px;
+  font-size: 13px;
   line-height: 20px;
-  font-weight: 600;
+  font-weight: 500;
+  border-radius: 6px;
   white-space: nowrap;
 }
 
 .peer-lock-notice {
-  margin-top: 0.75rem;
-  padding: 0.4rem 0.65rem;
-  background: rgba(245, 158, 11, 0.05);
-  border: 1px solid rgba(245, 158, 11, 0.18);
-  border-radius: var(--radius-xs);
-  font-size: 0.75rem;
-  color: #fbbf24;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 6px;
 }
 
 .lock-icon {
@@ -1927,42 +1927,41 @@ body {
 
 .booking-card {
   background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  transition: all 0.2s ease;
+  gap: 1rem;
+  transition: border-color 0.12s ease;
   position: relative;
 }
 
 .booking-card:hover {
-  border-color: rgba(255, 255, 255, 0.18);
-  box-shadow: var(--shadow-md);
+  border-color: #8b949e;
 }
 
 .booking-card.status-requested,
 .booking-card.status-pending {
-  border-left: 4px solid var(--accent-amber);
+  border-left: 3px solid #d29922;
 }
 
 .booking-card.status-accepted {
-  border-left: 4px solid var(--accent-green);
+  border-left: 3px solid #2ea043;
 }
 
 .booking-card.status-declined {
-  border-left: 4px solid var(--accent-rose);
-  opacity: 0.8;
+  border-left: 3px solid #f85149;
+  opacity: 0.85;
 }
 
 .booking-card.status-cancelled {
-  border-left: 4px solid #64748b;
-  opacity: 0.75;
+  border-left: 3px solid #8b949e;
+  opacity: 0.8;
 }
 
 .booking-card.status-completed {
-  border-left: 4px solid var(--accent-cyan);
+  border-left: 3px solid #a371f7;
 }
 
 .booking-card-header {
@@ -4182,79 +4181,75 @@ body {
 
 .podium-card {
   background: var(--bg-card);
-  border-radius: var(--radius-md);
-  padding: 1.75rem 1.25rem 1.5rem;
+  border-radius: 6px;
+  padding: 1.5rem 1.25rem 1.25rem;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  border: 1px solid var(--border-subtle);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: border-color 0.12s ease;
+  border: 1px solid var(--border-default);
 }
 
 .podium-card:hover {
-  transform: translateY(-3px);
+  border-color: #8b949e;
 }
 
 /* 1st Place - Gold */
 .podium-card.place-1,
 .podium-card.rank-1 {
   order: 2;
-  min-height: 300px;
-  background: linear-gradient(180deg, rgba(245, 158, 11, 0.08) 0%, rgba(18, 24, 36, 0.98) 100%);
-  border-color: rgba(245, 158, 11, 0.35);
-  box-shadow: 0 12px 32px -4px rgba(245, 158, 11, 0.15), inset 0 1px 0 rgba(245, 158, 11, 0.4);
+  min-height: 280px;
+  background: var(--bg-card);
+  border-color: #d29922;
 }
 
 /* 2nd Place - Silver */
 .podium-card.place-2,
 .podium-card.rank-2 {
   order: 1;
-  min-height: 265px;
-  background: linear-gradient(180deg, rgba(148, 163, 184, 0.06) 0%, rgba(18, 24, 36, 0.98) 100%);
-  border-color: rgba(148, 163, 184, 0.25);
-  box-shadow: 0 8px 24px -4px rgba(148, 163, 184, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  min-height: 250px;
+  background: var(--bg-card);
+  border-color: #8b949e;
 }
 
 /* 3rd Place - Bronze */
 .podium-card.place-3,
 .podium-card.rank-3 {
   order: 3;
-  min-height: 245px;
-  background: linear-gradient(180deg, rgba(217, 119, 6, 0.05) 0%, rgba(18, 24, 36, 0.98) 100%);
-  border-color: rgba(217, 119, 6, 0.22);
-  box-shadow: 0 8px 24px -4px rgba(217, 119, 6, 0.08), inset 0 1px 0 rgba(217, 119, 6, 0.2);
+  min-height: 235px;
+  background: var(--bg-card);
+  border-color: #8b949e;
 }
 
 .podium-medal {
-  font-size: 0.775rem;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.2rem 0.65rem;
-  border-radius: var(--radius-full);
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 20px;
   margin-bottom: 0.85rem;
   font-family: var(--font-mono);
 }
 
 .place-1 .podium-medal {
-  background: rgba(245, 158, 11, 0.15);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: rgba(210, 153, 34, 0.15);
+  color: #e3b341;
+  border: 1px solid rgba(210, 153, 34, 0.4);
 }
 
 .place-2 .podium-medal {
-  background: rgba(148, 163, 184, 0.15);
-  color: #cbd5e1;
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(139, 148, 158, 0.15);
+  color: #c9d1d9;
+  border: 1px solid rgba(139, 148, 158, 0.4);
 }
 
 .place-3 .podium-medal {
-  background: rgba(217, 119, 6, 0.12);
-  color: #f59e0b;
-  border: 1px solid rgba(217, 119, 6, 0.25);
+  background: rgba(219, 109, 40, 0.12);
+  color: #f0883e;
+  border: 1px solid rgba(219, 109, 40, 0.35);
 }
 
 .podium-avatar {
@@ -4687,86 +4682,155 @@ body {
 }
 
 /* ==========================================================================
-   SMART MATCH STYLES (Explainable Deterministic Mentor Matcher)
+   GITHUB DIRECTORY HEADER & SEGMENTED CONTROLS
    ========================================================================== */
 
-/* Mode Switcher Tabs */
+.gh-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.gh-title-col {
+  flex: 1;
+  min-width: 280px;
+}
+
+.gh-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gh-page-heading {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.gh-badge-counter {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 2em;
+  padding: 1px 8px;
+  line-height: 18px;
+}
+
+.gh-page-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
+/* GitHub Primer Segmented Control */
+.gh-segmented-control {
+  display: inline-flex;
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.gh-segment-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.gh-segment-btn:hover {
+  color: var(--text-primary);
+}
+
+.gh-segment-btn.active {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+}
+
+.gh-subtle-badge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  background: rgba(163, 113, 247, 0.12);
+  color: #a371f7;
+  border: 1px solid rgba(163, 113, 247, 0.25);
+  border-radius: 4px;
+  padding: 0 4px;
+  line-height: 16px;
+}
+
+/* Backward compatibility for mode tabs if needed */
 .directory-mode-switch {
   display: inline-flex;
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 0.3rem;
-  gap: 0.35rem;
-  margin-bottom: 1.5rem;
-  width: fit-content;
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+  margin-bottom: 1.25rem;
 }
 
 .mode-tab-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.55rem 1.15rem;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 4px;
   background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  border: none;
   color: var(--text-secondary);
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.12s ease;
 }
 
 .mode-tab-btn:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.05);
 }
 
 .mode-tab-btn.active {
-  background: rgba(56, 189, 248, 0.12);
-  color: #38bdf8;
-  border-color: rgba(56, 189, 248, 0.35);
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
 }
 
-.smart-sparkle-icon {
-  font-size: 1rem;
-}
-
-.mode-badge-new {
-  font-size: 0.65rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  background: rgba(56, 189, 248, 0.2);
-  color: #38bdf8;
-  padding: 0.15rem 0.45rem;
-  border-radius: var(--radius-xs);
-  letter-spacing: 0.05em;
-}
-
-/* Smart Match Panel */
+/* Smart Match Panel — Authentic GitHub Box */
 .smart-match-panel {
   background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
-  margin-bottom: 2rem;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  gap: 1rem;
   position: relative;
-  overflow: hidden;
 }
 
 .smart-match-panel::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #38bdf8, #818cf8, #34d399);
+  display: none;
 }
 
 .smart-panel-header {
@@ -4925,31 +4989,30 @@ body {
 
 /* Smart Match Cards */
 .peer-card.is-best-match {
-  border-color: rgba(52, 211, 153, 0.45);
-  box-shadow: 0 0 20px rgba(52, 211, 153, 0.12);
+  border-color: #2ea043;
   position: relative;
 }
 
 .best-match-ribbon {
   position: absolute;
   top: -1px;
-  right: 1.5rem;
-  background: linear-gradient(135deg, #10b981, #059669);
+  right: 1rem;
+  background: #238636;
+  border: 1px solid #2ea043;
   color: #ffffff;
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  padding: 0.25rem 0.75rem;
-  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 1px 8px;
+  border-radius: 0 0 4px 4px;
   z-index: 2;
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 4px;
 }
 
 .ribbon-star {
-  font-size: 0.75rem;
+  font-size: 11px;
 }
 
 .peer-card-dimmed {

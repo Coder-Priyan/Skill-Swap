@@ -24,6 +24,7 @@ const { checkIntegrity } = await import('../src/ledger.js');
 const { MATCH_WEIGHTS, MATCH_KEYWORDS } = await import('../src/config.js');
 const {
   detectTopics,
+  detectLanguages,
   scoreMentor,
   rankMatchResults,
   slotMatchesAvailability,
@@ -581,6 +582,134 @@ async function runAllTests() {
       'Tie-break determinism: verified multi-attribute sort order on equal scores',
       tieBreakOk,
       `order=${orderIds.join(',')}`
+    );
+
+    // -------------------------------------------------------------------------
+    // CASE 12: Consistency test (Match vs Peers non-match keys)
+    // -------------------------------------------------------------------------
+    const peersRes = await fetch(`${BASE_URL}/api/peers`, {
+      headers: { 'X-User-Id': 'usr_terminaltinkerer' },
+    });
+    const peersData = await peersRes.json();
+    const peersListCase12 = Array.isArray(peersData) ? peersData : peersData.peers || [];
+    const peersMap = new Map(peersListCase12.map((p) => [p.id, p]));
+
+    const matchResCase12 = await fetch(
+      `${BASE_URL}/api/match?problem=React&daypart=evening`,
+      { headers: { 'X-User-Id': 'usr_terminaltinkerer' } }
+    );
+    const matchDataCase12 = await matchResCase12.json();
+    const nonMatchKeys = [
+      'id',
+      'name',
+      'handle',
+      'avatar_color',
+      'bio',
+      'experience',
+      'languages',
+      'is_online',
+      'level',
+      'badge',
+      'skills',
+      'slots',
+      'rating_avg',
+      'rating_count',
+      'sessions_completed_as_mentor',
+      'next_slot_label',
+      'can_book',
+      'block_reason',
+      'level_relation',
+    ];
+
+    let case12Ok = true;
+    let case12Error = '';
+
+    for (const matchPeer of matchDataCase12.results || []) {
+      const peer = peersMap.get(matchPeer.id);
+      if (!peer) {
+        case12Ok = false;
+        case12Error = `Peer ${matchPeer.id} not found in /api/peers`;
+        break;
+      }
+
+      for (const key of nonMatchKeys) {
+        try {
+          assert.deepStrictEqual(matchPeer[key], peer[key]);
+        } catch (e) {
+          case12Ok = false;
+          case12Error = `Mismatch on key "${key}" for peer ${matchPeer.id}: ${e.message}`;
+          break;
+        }
+      }
+      if (!case12Ok) break;
+
+      // Also assert suggested_slot_id belongs to that mentor's slots
+      if (matchPeer.suggested_slot_id !== null && matchPeer.suggested_slot_id !== undefined) {
+        const slotExists = peer.slots.some((s) => s.id === matchPeer.suggested_slot_id);
+        if (!slotExists) {
+          case12Ok = false;
+          case12Error = `suggested_slot_id ${matchPeer.suggested_slot_id} not in slots of peer ${matchPeer.id}`;
+          break;
+        }
+      }
+    }
+
+    record(12, 'Consistency: all non-match keys match GET /api/peers and suggested_slot_id in slots', case12Ok, case12Error);
+
+    // -------------------------------------------------------------------------
+    // CASE 13: detectLanguages pure unit test
+    // -------------------------------------------------------------------------
+    const dbKnownLanguages = db
+      .prepare("SELECT languages FROM users WHERE languages IS NOT NULL AND languages != ''")
+      .all()
+      .flatMap((r) => r.languages.split(',').map((s) => s.trim()).filter(Boolean));
+    const uniqueKnownLangs = Array.from(new Set(dbKnownLanguages));
+
+    const det1 = detectLanguages('help in Hindi', uniqueKnownLangs);
+    const det2 = detectLanguages('In hindsight, this was avoidable', uniqueKnownLangs);
+    const det3 = detectLanguages('Just building a web application with components', uniqueKnownLangs);
+
+    const case13Ok =
+      JSON.stringify(det1) === JSON.stringify(['Hindi']) &&
+      JSON.stringify(det2) === JSON.stringify([]) &&
+      JSON.stringify(det3) === JSON.stringify([]);
+
+    record(
+      13,
+      'detectLanguages: "help in Hindi" -> [Hindi], "hindsight" -> [], no language -> []',
+      case13Ok,
+      `det1=${JSON.stringify(det1)}, det2=${JSON.stringify(det2)}, det3=${JSON.stringify(det3)}`
+    );
+
+    // -------------------------------------------------------------------------
+    // CASE 14: As Tanvi with demo sentence & detected Hindi language
+    // -------------------------------------------------------------------------
+    const demoSentence14 = 'My React component re-renders too much, need help in Hindi this evening';
+    const res14 = await fetch(
+      `${BASE_URL}/api/match?problem=${encodeURIComponent(demoSentence14)}&daypart=evening`,
+      { headers: { 'X-User-Id': 'usr_terminaltinkerer' } }
+    );
+    const json14 = await res14.json();
+
+    const hasDetectedHindi =
+      Array.isArray(json14.query?.detected_languages) &&
+      json14.query.detected_languages.includes('Hindi');
+
+    const priyaResult = (json14.results || []).find((r) => r.id === 'usr_pixelpriya');
+    const priyaLangReason = priyaResult?.reasons?.find((r) => r.key === 'language');
+    const priyaLangOk = priyaLangReason?.label === 'Hindi' && priyaLangReason?.ok === true;
+
+    // A non-Hindi mentor: e.g. usr_algoace (Kavita Iyer speaks English, Tamil)
+    const nonHindiMentor = (json14.results || []).find((r) => r.id === 'usr_algoace');
+    const nonHindiLangReason = nonHindiMentor?.reasons?.find((r) => r.key === 'language');
+    const nonHindiLangOk = nonHindiLangReason?.ok === false;
+
+    const case14Ok = hasDetectedHindi && priyaLangOk && nonHindiLangOk;
+    record(
+      14,
+      'Tanvi demo sentence: detected_languages ["Hindi"], Priya language reason "Hindi" ok:true, non-Hindi mentor ok:false',
+      case14Ok,
+      `detected=${JSON.stringify(json14.query?.detected_languages)}, priyaLang=${JSON.stringify(priyaLangReason)}, nonHindiLang=${JSON.stringify(nonHindiLangReason)}`
     );
 
     console.log('\n====================================================');

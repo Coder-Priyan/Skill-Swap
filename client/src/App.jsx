@@ -262,7 +262,7 @@ export default function App() {
         await resetDemoData();
         addToast({
           type: 'success',
-          title: 'Demo Reset Complete ✨',
+          title: 'Demo Reset Complete',
           message: 'Database and live room state reset to clean seed.',
           link: '/',
         });
@@ -387,13 +387,6 @@ export default function App() {
                   ({currentProfile.reserved_credits} res.)
                 </span>
               )}
-            </div>
-          )}
-
-          {/* Level badge from GET /api/users/:id */}
-          {currentProfile && (
-            <div className={`badge-pill ${getBadgeClass(currentProfile.level)}`}>
-              Lvl {currentProfile.level} • {currentProfile.badge}
             </div>
           )}
 

@@ -29,3 +29,5 @@ test-all.log
 git-log.txt
 git-reflog.txt
 numstat.txt
+report_outputs/
+
