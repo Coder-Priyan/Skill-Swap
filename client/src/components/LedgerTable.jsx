@@ -125,8 +125,14 @@ export default function LedgerTable({ userId }) {
             onClick={handleDownloadCsv}
             disabled={downloading || loading}
             title="Export full ledger as CSV"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
-            {downloading ? 'Downloading...' : '📥 Download CSV'}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            <span>{downloading ? 'Downloading...' : 'Export CSV'}</span>
           </button>
         </div>
       </div>
@@ -157,7 +163,13 @@ export default function LedgerTable({ userId }) {
         </div>
       ) : entries.length === 0 ? (
         <div className="ledger-empty-state">
-          <span className="empty-icon">📜</span>
+          <div className="empty-icon" style={{ opacity: 0.6, display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+              <line x1="8" y1="21" x2="16" y2="21" />
+              <line x1="12" y1="17" x2="12" y2="21" />
+            </svg>
+          </div>
           <p className="empty-title">No transactions yet</p>
           <p className="empty-subtitle">
             {selectedKind

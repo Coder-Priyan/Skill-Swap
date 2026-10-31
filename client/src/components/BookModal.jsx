@@ -48,22 +48,50 @@ export default function BookModal({ peer, currentProfile, onClose, onBookSuccess
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+  const availableCredits = currentProfile?.available_credits || 0;
+  const sessionCost = 5;
+  const remainingBalance = Math.max(0, availableCredits - sessionCost);
+
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-card modal-precision-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div>
-            <h2 className="modal-title">Book Session with {peer.name}</h2>
-            <div className="modal-subtitle">@{peer.handle} • Level {peer.level} {peer.badge}</div>
+            <h2 className="modal-title">Book Micro-Mentorship Session</h2>
+            <div className="modal-subtitle">Direct 1-on-1 collaborative pairing</div>
           </div>
           <button className="modal-close-btn" onClick={onClose} aria-label="Close modal">
             ✕
           </button>
         </div>
 
+        {/* Mentor Mini Profile Banner */}
+        <div className="modal-mentor-banner">
+          <div 
+            className="modal-mentor-avatar"
+            style={{ backgroundColor: peer.avatar_color }}
+          >
+            {peer.name.charAt(0)}
+          </div>
+          <div className="modal-mentor-info">
+            <div className="modal-mentor-name-row">
+              <span className="modal-mentor-name">{peer.name}</span>
+              <span className="modal-mentor-handle">@{peer.handle}</span>
+            </div>
+            <div className="modal-mentor-meta">
+              <span className="mentor-level-tag">Lvl {peer.level} • {peer.badge}</span>
+              <span className="meta-sep">•</span>
+              <span className="mentor-rating-tag">★ {peer.rating_avg !== null ? peer.rating_avg.toFixed(1) : 'New'} ({peer.rating_count})</span>
+              <span className="meta-sep">•</span>
+              <span>{peer.sessions_completed_as_mentor} mentored</span>
+            </div>
+          </div>
+        </div>
+
         {errorMessage && (
           <div className="modal-error-banner" role="alert">
-            ⚠️ {errorMessage}
+            <span className="alert-icon">⚠️</span>
+            <span>{errorMessage}</span>
           </div>
         )}
 
@@ -73,7 +101,7 @@ export default function BookModal({ peer, currentProfile, onClose, onBookSuccess
             <label className="form-label" htmlFor="booking-topic">Topic to discuss</label>
             <select
               id="booking-topic"
-              className="form-select"
+              className="form-select control-select"
               value={selectedTopic}
               onChange={(e) => setSelectedTopic(e.target.value)}
               required
@@ -88,59 +116,69 @@ export default function BookModal({ peer, currentProfile, onClose, onBookSuccess
 
           {/* Problem Note Textarea */}
           <div className="form-group">
-            <label className="form-label" htmlFor="booking-problem">
-              What do you need help with? <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>(min 10 characters)</span>
-            </label>
+            <div className="label-with-counter">
+              <label className="form-label" htmlFor="booking-problem">
+                What do you need help with?
+              </label>
+              <span className="char-counter">{problemNote.length}/500 chars</span>
+            </div>
             <textarea
               id="booking-problem"
-              className="form-textarea"
+              className="form-textarea precision-textarea"
               rows={3}
-              placeholder="Describe your bug, concept question, or architecture goal..."
+              placeholder="Describe your bug, concept question, or architecture goal (min 10 characters)..."
               value={problemNote}
               onChange={(e) => setProblemNote(e.target.value)}
               required
               minLength={10}
               maxLength={500}
             />
-            <div style={{ textAlign: 'right', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-              {problemNote.length}/500 chars
-            </div>
           </div>
 
           {/* Slot Choice from Mentor's Slots */}
           <div className="form-group">
             <label className="form-label" htmlFor="booking-slot">Choose an availability window</label>
             {(!peer.slots || peer.slots.length === 0) ? (
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+              <p className="no-slots-notice">
                 Mentor has no listed time slots.
               </p>
             ) : (
-              <select
-                id="booking-slot"
-                className="form-select"
-                value={selectedSlot}
-                onChange={(e) => setSelectedSlot(e.target.value)}
-                required
-              >
-                {peer.slots.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {dayNames[s.day_of_week]}: {s.start_hour}:00 - {s.end_hour}:00
-                  </option>
-                ))}
-              </select>
+              <div className="slot-pills-row" role="radiogroup" aria-label="Available time slots">
+                {peer.slots.map((s) => {
+                  const label = `${dayNames[s.day_of_week]}: ${s.start_hour}:00 - ${s.end_hour}:00`;
+                  const isSelected = selectedSlot === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className={`slot-pill-btn ${isSelected ? 'selected' : ''}`}
+                      onClick={() => setSelectedSlot(s.id)}
+                    >
+                      <span className="slot-calendar-icon">📅</span>
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </div>
 
           {/* Credit Cost and Available Credits breakdown */}
-          <div className="cost-breakdown-card">
+          <div className="cost-breakdown-card precision-cost-card">
             <div className="cost-item">
               <span className="cost-label">Session Cost:</span>
-              <span className="cost-val highlight-amber">5 Credits</span>
+              <span className="cost-val highlight-amber">{sessionCost} cr</span>
             </div>
+            <div className="cost-divider" />
             <div className="cost-item">
-              <span className="cost-label">Your Available Credits:</span>
+              <span className="cost-label">Your Available Balance:</span>
+              <span className="cost-val highlight-blue">{availableCredits} cr</span>
+            </div>
+            <div className="cost-divider" />
+            <div className="cost-item">
+              <span className="cost-label">Remaining Balance:</span>
               <span className="cost-val highlight-green">
-                {currentProfile ? `${currentProfile.available_credits} Credits` : '...'}
+                {remainingBalance} cr <span className="verified-text">verified</span>
               </span>
             </div>
           </div>
@@ -151,10 +189,10 @@ export default function BookModal({ peer, currentProfile, onClose, onBookSuccess
             </button>
             <button
               type="submit"
-              className="btn btn-primary"
-              disabled={submitting || (!peer.slots || peer.slots.length === 0)}
+              className="btn btn-primary btn-confirm-booking"
+              disabled={submitting || (!peer.slots || peer.slots.length === 0) || availableCredits < sessionCost}
             >
-              {submitting ? 'Submitting Request...' : 'Confirm Booking'}
+              {submitting ? 'Submitting Request...' : `Confirm & Request Booking (${sessionCost} cr)`}
             </button>
           </div>
         </form>

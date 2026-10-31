@@ -85,10 +85,9 @@ export default function Leaderboard({ currentUser, onSelectPeer }) {
     <div className="page-container leaderboard-page">
       <header className="page-header leaderboard-header">
         <div>
-          <div className="header-badge">Community Champions</div>
           <h1 className="page-title">Top Mentors & Helpers</h1>
           <p className="page-subtitle">
-            Celebrating our most active knowledge sharers. Ranked by verified sessions completed, average rating, and credits earned.
+            Ranked by verified sessions completed, average rating, and credits earned.
           </p>
         </div>
         <div className="leaderboard-stat-pill">

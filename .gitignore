@@ -25,3 +25,7 @@ build/
 .DS_Store
 Thumbs.db
 *.log
+test-all.log
+git-log.txt
+git-reflog.txt
+numstat.txt

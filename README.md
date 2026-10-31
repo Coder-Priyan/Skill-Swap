@@ -1,12 +1,12 @@
 # SkillSwap — Micro-Mentorship & Skill Exchange Hub
 
-SkillSwap is an audit-verifiable, peer-to-peer micro-mentorship and live code collaboration platform where developers exchange focused 1-on-1 assistance with experienced peers. Operating on an append-only cryptographic-style credit ledger, users spend platform tokens to receive help and earn tokens by mentoring others.
+SkillSwap is an audit-verifiable, peer-to-peer micro-mentorship and live code collaboration platform where developers exchange focused 1-on-1 assistance with experienced peers. Operating on an append-only SQLite credit ledger, users spend platform tokens to receive help and earn tokens by mentoring others.
 
 ---
 
 ## 🏛️ Architecture
 
-SkillSwap pairs a single-process Node.js / Express backend backed by an append-only SQLite double-entry ledger (`WAL` mode) and in-memory Yjs CRDT synchronization with a Vite React client featuring Monaco live code collaboration, real-time Socket.io presence, and public zero-trust audit verification.
+SkillSwap pairs a single-process Node.js / Express backend backed by an append-only SQLite double-entry ledger (`WAL` mode) and in-memory Yjs CRDT synchronization with a Vite React client featuring Monaco live code collaboration, real-time Socket.io presence, and a public audit verification endpoint.
 
 ---
 
@@ -46,7 +46,7 @@ SkillSwap pairs a single-process Node.js / Express backend backed by an append-o
    - Read-only code archive preserved in the session's selected programming language with instant code download (`.js`, `.py`, `.ts`, etc.).
    - Persistent, editable collaborative session summary notes for participants.
 
-8. **Hardened Production Mode & In-Process Demo Reset**:
+8. **Production Mode & In-Process Demo Reset**:
    - Single-process production deployment: Express serves optimized static assets and handles SPA routing fallback for `/room/*` and `/profile`.
    - 0.0.0.0 LAN binding displaying local WiFi URLs for cross-device evaluation (phones/tablets/laptops).
    - In-process demo reset (`POST /api/demo/reset`) restores the deterministic seed and resets all rooms in a single transaction without killing the server.

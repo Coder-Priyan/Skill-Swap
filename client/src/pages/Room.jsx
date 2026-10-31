@@ -474,7 +474,14 @@ export default function Room() {
           </Link>
 
           <div className="room-topic-badge">
-            <span className="topic-icon">🎯</span>
+            <span className="topic-icon">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="4" y1="9" x2="20" y2="9" />
+                <line x1="4" y1="15" x2="20" y2="15" />
+                <line x1="10" y1="3" x2="8" y2="21" />
+                <line x1="16" y1="3" x2="14" y2="21" />
+              </svg>
+            </span>
             <span className="topic-title">{booking.topic}</span>
           </div>
 
@@ -504,8 +511,13 @@ export default function Room() {
         <div className="room-header-right">
           {/* Live Timer */}
           <div className="live-timer-chip" title="Live session duration">
-            <span className="timer-icon">⏱️</span>
-            <span className="timer-text">{formatTimer(elapsedSeconds)}</span>
+            <span className="timer-icon">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            </span>
+            <span className="timer-text monospace-tabular">{formatTimer(elapsedSeconds)}</span>
           </div>
 
           {/* Connection Status Badge */}
@@ -518,7 +530,8 @@ export default function Room() {
 
           {/* Escrow Credit Chip */}
           <div className="room-cost-chip" title="Session cost held in reservation">
-            🪙 <span>{booking.cost} cr will move when the session ends</span>
+            <span className="monospace-tabular">{booking.cost} cr</span>
+            <span style={{ opacity: 0.75, marginLeft: '4px' }}>held in escrow</span>
           </div>
 
           {/* End Session Button (Slice 6) */}
@@ -554,8 +567,9 @@ export default function Room() {
             </div>
 
             <div className="editor-status-indicators">
-              <span className="editor-collab-tag">
-                ⚡ Real-time Yjs Sync Enabled
+              <span className="editor-collab-tag" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <span className="presence-dot online" style={{ width: '6px', height: '6px' }} />
+                <span>Yjs CRDT Sync Active</span>
               </span>
             </div>
           </div>
@@ -583,8 +597,13 @@ export default function Room() {
         {/* Live Chat Panel */}
         <div className="room-chat-panel">
           <div className="chat-panel-header">
-            <h4>💬 Session Chat</h4>
-            <span className="chat-online-count">
+            <h4 style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              <span>Session Chat</span>
+            </h4>
+            <span className="chat-online-count monospace-tabular">
               {presenceUsers.length} in room
             </span>
           </div>
@@ -683,12 +702,17 @@ export default function Room() {
         <div className="modal-backdrop">
           <div className="modal-content settlement-modal">
             <div className="settlement-modal-header">
-              <span className="settlement-modal-icon">🎉</span>
+              <div className="settlement-modal-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                  <polyline points="22 4 12 14.01 9 11.01" />
+                </svg>
+              </div>
               <h2>Session complete</h2>
             </div>
             <div className="settlement-modal-body">
               <p className="settlement-credits-transfer-line">
-                <strong>{settlementData.amount} credits</strong> moved from{' '}
+                <strong className="monospace-tabular">{settlementData.amount} cr</strong> transferred from{' '}
                 <strong>{settlementData.learner?.name || booking?.learner?.name}</strong> to{' '}
                 <strong>{settlementData.mentor?.name || booking?.mentor?.name}</strong>
               </p>
@@ -696,13 +720,13 @@ export default function Room() {
               {typeof settlementData.my_new_balance === 'number' && (
                 <div className="settlement-user-balance-box">
                   <span className="balance-label">Your new balance:</span>
-                  <span className="balance-value">🪙 {settlementData.my_new_balance} cr</span>
+                  <span className="balance-value monospace-tabular">{settlementData.my_new_balance} cr</span>
                 </div>
               )}
 
               {settlementData.leveled_up && (
                 <div className="settlement-levelup-card">
-                  <div className="levelup-badge-tag">🌟 Level up!</div>
+                  <div className="levelup-badge-tag">Level Up!</div>
                   <div className="levelup-text">
                     <strong>{settlementData.mentor?.name || booking?.mentor?.name}</strong> reached{' '}
                     <strong>Level {settlementData.mentor_level_after} ({settlementData.mentor_level_after === 3 ? 'Mentor' : 'Helper'})</strong>
@@ -714,8 +738,13 @@ export default function Room() {
               <button
                 className="btn btn-outline btn-notes"
                 onClick={() => navigate(`/sessions/${booking.id}`)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
-                📝 View notes
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+                <span>View notes</span>
               </button>
               <button
                 className="btn btn-secondary"

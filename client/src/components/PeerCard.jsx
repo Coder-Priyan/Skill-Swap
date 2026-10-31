@@ -11,9 +11,23 @@ export default function PeerCard({ peer, onBookClick }) {
   const isHigher = peer.level_relation === 'higher';
   const isSame = peer.level_relation === 'same';
 
+  const getLanguageColor = (skill = '') => {
+    const s = skill.toLowerCase();
+    if (s.includes('script') && s.includes('type')) return '#3178c6';
+    if (s.includes('script') || s.includes('js')) return '#f1e05a';
+    if (s.includes('python')) return '#3572A5';
+    if (s.includes('react')) return '#61dafb';
+    if (s.includes('node')) return '#339933';
+    if (s.includes('css') || s.includes('html')) return '#e34c26';
+    return '#58a6ff';
+  };
+
+  const primarySkill = peer.skills && peer.skills[0] ? peer.skills[0] : 'Engineering';
+  const langColor = getLanguageColor(primarySkill);
+
   return (
-    <div className={`card peer-card ${peer.is_online ? 'peer-online-highlight' : ''}`}>
-      {/* Header: Avatar, Name, Handle, Online Status, Level Badge */}
+    <div className={`peer-card ${peer.is_online ? 'is-online' : ''}`}>
+      {/* Top Header Row */}
       <div className="peer-card-header">
         <div className="peer-avatar-wrap">
           <div 
@@ -23,7 +37,7 @@ export default function PeerCard({ peer, onBookClick }) {
             {peer.name.charAt(0)}
           </div>
           {peer.is_online && (
-            <span className="online-indicator-dot" title="Online now" />
+            <span className="peer-online-pulse" title="Online and active now" />
           )}
         </div>
 
@@ -34,92 +48,85 @@ export default function PeerCard({ peer, onBookClick }) {
                 {peer.name}
               </Link>
             </h3>
+            <span className="peer-handle">@{peer.handle}</span>
             {peer.is_online && (
-              <span className="online-text-tag">Online</span>
+              <span className="online-tag">Online</span>
             )}
           </div>
-          <div className="peer-handle">@{peer.handle}</div>
         </div>
 
         <div className="peer-badges-stack">
-          <span className={`badge-pill ${getBadgeClass(peer.level)}`}>
-            Lvl {peer.level} • {peer.badge}
+          <span className="level-relation-tag" style={{ textTransform: 'capitalize' }}>
+            {peer.experience || 'Senior'} Engineer
           </span>
           {isHigher && (
-            <span className="level-relation-tag tag-higher">
-              ▲ Higher level
-            </span>
-          )}
-          {isSame && (
-            <span className="level-relation-tag tag-same">
-              ● Same level
+            <span className="level-relation-tag tag-higher" title="Higher level than you">
+              ▲ L{peer.level}
             </span>
           )}
         </div>
       </div>
 
-      {/* Bio */}
+      {/* Bio Description */}
       <p className="peer-bio">{peer.bio}</p>
 
-      {/* Skills Chips */}
-      <div className="peer-section">
-        <div className="section-label">Skills</div>
-        <div className="chip-group">
+      {/* Skills / Topics */}
+      <div className="peer-skills-section">
+        <div className="peer-tag-group">
           {peer.skills.map((skill) => (
-            <span key={skill} className="chip skill-chip">
+            <span key={skill} className="peer-skill-tag">
               {skill}
             </span>
           ))}
         </div>
       </div>
 
-      {/* Languages & Slots */}
-      <div className="peer-meta-row">
-        <div className="meta-col">
-          <div className="section-label">Languages</div>
-          <div className="meta-text">{peer.languages.join(', ')}</div>
-        </div>
-
-        <div className="meta-col">
-          <div className="section-label">Next Available</div>
-          <div className="meta-slot-chip">
-            📅 {peer.next_slot_label || 'Check calendar'}
-          </div>
-        </div>
-      </div>
-
-      {/* Footer: Rating, Mentored count, Book Button */}
+      {/* GitHub Repo Card Footer: Language Dot, Rating, CTA */}
       <div className="peer-card-footer">
-        <div className="peer-stats-col">
-          <div className="peer-rating-wrap">
-            <span className="rating-star">★</span>
-            <span className="rating-val">
+        <div className="peer-rating-block">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span 
+              style={{
+                width: '10px',
+                height: '10px',
+                borderRadius: '50%',
+                backgroundColor: langColor,
+                display: 'inline-block'
+              }} 
+            />
+            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+              {primarySkill}
+            </span>
+          </div>
+
+          <div className="rating-stars-row">
+            <span className="star-icon">★</span>
+            <span className="rating-number">
               {peer.rating_avg !== null ? peer.rating_avg.toFixed(1) : 'New'}
             </span>
-            <span className="rating-count">({peer.rating_count})</span>
-          </div>
-          <div className="mentored-sessions-count">
-            {peer.sessions_completed_as_mentor} {peer.sessions_completed_as_mentor === 1 ? 'session' : 'sessions'} mentored
+            <span className="rating-total">({peer.rating_count})</span>
           </div>
         </div>
 
-        <div className="peer-action-col">
-          <button
-            type="button"
-            className={`btn ${peer.can_book ? 'btn-primary' : 'btn-disabled'}`}
-            disabled={!peer.can_book}
-            onClick={() => onBookClick(peer)}
-            title={peer.can_book ? `Book 30-min session (5 credits)` : peer.block_reason}
-          >
-            {peer.can_book ? 'Book Session' : 'Unavailable'}
-          </button>
-        </div>
+        <button
+          type="button"
+          className={`btn ${peer.can_book ? 'btn-secondary' : 'btn-disabled'} peer-book-btn`}
+          disabled={!peer.can_book}
+          onClick={() => onBookClick(peer)}
+          title={peer.can_book ? `Book 30-min session (5 credits)` : peer.block_reason}
+        >
+          {peer.can_book ? 'Request Session' : 'Unavailable'}
+        </button>
       </div>
 
-      {/* Block reason message when booking is ineligible */}
+      {/* Subtle Integrated Block Reason (When Cannot Book) */}
       {!peer.can_book && peer.block_reason && (
-        <div className="peer-block-reason">
-          ⚠️ {peer.block_reason}
+        <div className="peer-lock-notice" title={peer.block_reason} style={{ marginTop: '8px', fontSize: '12px', color: '#8b949e', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+          <span>{peer.block_reason}</span>
         </div>
       )}
     </div>

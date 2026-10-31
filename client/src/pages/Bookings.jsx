@@ -110,14 +110,22 @@ export default function Bookings({ currentUserId, onNavigate, onBookingsChange }
       </div>
 
       {actionMessage && (
-        <div className="alert alert-success" style={{ marginBottom: '1.5rem' }}>
-          ✅ {actionMessage}
+        <div className="alert alert-success" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          <span>{actionMessage}</span>
         </div>
       )}
 
       {error && (
-        <div className="alert alert-error" style={{ marginBottom: '1.5rem' }}>
-          ⚠️ {error}
+        <div className="alert alert-error" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <span>{error}</span>
         </div>
       )}
 
@@ -128,9 +136,14 @@ export default function Bookings({ currentUserId, onNavigate, onBookingsChange }
             type="button"
             className={`tab-btn ${activeTab === 'learning' ? 'active' : ''}`}
             onClick={() => setActiveTab('learning')}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
           >
-            🎓 I'm Learning
-            <span className="tab-count-badge">{learningBookings.length}</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+            </svg>
+            <span>Learning Sessions</span>
+            <span className="tab-count-badge monospace-tabular">{learningBookings.length}</span>
             {pendingLearningCount > 0 && (
               <span className="tab-pending-dot" title={`${pendingLearningCount} pending`}></span>
             )}
@@ -139,9 +152,16 @@ export default function Bookings({ currentUserId, onNavigate, onBookingsChange }
             type="button"
             className={`tab-btn ${activeTab === 'mentoring' ? 'active' : ''}`}
             onClick={() => setActiveTab('mentoring')}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
           >
-            🧑‍🏫 I'm Mentoring
-            <span className="tab-count-badge">{mentoringBookings.length}</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            <span>Mentoring Sessions</span>
+            <span className="tab-count-badge monospace-tabular">{mentoringBookings.length}</span>
             {pendingMentoringCount > 0 && (
               <span className="tab-urgent-badge">{pendingMentoringCount} pending</span>
             )}
@@ -190,7 +210,12 @@ export default function Bookings({ currentUserId, onNavigate, onBookingsChange }
           </div>
         ) : filteredBookings.length === 0 ? (
           <div className="empty-state-card">
-            <div className="empty-icon">📭</div>
+            <div className="empty-icon" style={{ opacity: 0.6, display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+                <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+              </svg>
+            </div>
             <h3>No {statusFilter !== 'all' ? statusFilter : ''} bookings found</h3>
             <p>
               {activeTab === 'learning'

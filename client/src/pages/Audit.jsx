@@ -82,8 +82,7 @@ export default function Audit({ currentUser }) {
     <div className="page-container audit-page">
       <header className="page-header audit-page-header">
         <div>
-          <div className="header-badge">Transparency & Security</div>
-          <h1 className="page-title">Ledger Integrity & Proof of Conservation</h1>
+          <h1 className="page-title">Security & Ledger Integrity</h1>
           <p className="page-subtitle">
             Real-time mathematical verification of double-entry credit flows, platform minting, and zero-sum settlements.
           </p>
@@ -102,39 +101,38 @@ export default function Audit({ currentUser }) {
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
+            width="14"
+            height="14"
+            style={{ marginRight: '6px' }}
           >
             <polyline points="23 4 23 10 17 10" />
             <polyline points="1 20 1 14 7 14" />
             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
           </svg>
-          {refreshing ? 'Verifying...' : 'Re-run audit'}
+          {refreshing ? 'Verifying...' : 'Re-run workflow'}
         </button>
       </header>
 
-      {/* Big Status Banner */}
+      {/* GitHub Actions Style Workflow Status Banner */}
       <section className={`audit-status-banner ${allChecksPassed && conserved ? 'banner-pass' : 'banner-fail'}`}>
         <div className="banner-icon-col">
           {allChecksPassed && conserved ? (
-            <div className="shield-icon pass">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                <polyline points="9 12 11 14 15 10" />
-              </svg>
-            </div>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3fb950" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
           ) : (
-            <div className="shield-icon fail">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-            </div>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f85149" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="15" y1="9" x2="9" y2="15" />
+              <line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
           )}
         </div>
         <div className="banner-content-col">
           <div className="banner-title">
             {allChecksPassed && conserved
-              ? 'All checks passed: credits strictly conserved'
+              ? 'All 7 ledger checks passed: credits strictly conserved'
               : 'Integrity Alert: System inconsistencies detected'}
           </div>
           <p className="banner-desc">
@@ -152,7 +150,7 @@ export default function Audit({ currentUser }) {
       <section className="audit-metrics-grid">
         <div className="audit-metric-card">
           <div className="metric-header">
-            <span className="metric-label">Total Minted Credits</span>
+            <span className="metric-label">Total Minted</span>
             <span className="metric-badge green">Source of Truth</span>
           </div>
           <div className="metric-value">{minted.total || 0} <span className="metric-unit">cr</span></div>
@@ -165,7 +163,7 @@ export default function Audit({ currentUser }) {
 
         <div className="audit-metric-card">
           <div className="metric-header">
-            <span className="metric-label">In-Circulation Balances</span>
+            <span className="metric-label">In-Circulation</span>
             <span className="metric-badge blue">SUM(All Balances)</span>
           </div>
           <div className="metric-value">{in_balances_total} <span className="metric-unit">cr</span></div>
@@ -186,71 +184,70 @@ export default function Audit({ currentUser }) {
         </div>
       </section>
 
-      {/* Integrity Checks List */}
+      {/* Integrity Checks List — GitHub Actions Step Run Style */}
       <section className="audit-section checks-section">
         <div className="section-header">
-          <h2 className="section-title">Automated Integrity Assertions ({checks.length}/{checks.length} verified)</h2>
-          <span className="section-subtitle">Real-time invariants checked against database WAL log</span>
+          <h2 className="section-title">Automated Invariant Assertions ({checks.filter(c => c.ok).length}/{checks.length} passed)</h2>
+          <span className="section-subtitle">Real-time mathematical proofs validated on double-entry WAL ledger</span>
         </div>
 
-        <div className="checks-list">
-          {checks.map((chk) => (
-            <div key={chk.key} className={`check-card ${chk.ok ? 'check-pass' : 'check-fail'}`}>
-              <div className="check-status-badge">
+        <div className="github-actions-step-box">
+          {checks.map((chk, idx) => (
+            <div key={chk.key} className="github-step-row">
+              <div className="step-left">
                 {chk.ok ? (
-                  <span className="badge-pass">
-                    <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    PASS
-                  </span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3fb950" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                 ) : (
-                  <span className="badge-fail">
-                    <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                    FAIL
-                  </span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f85149" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
                 )}
+                <span className="step-num">{idx + 1}.</span>
+                <span className="step-name">{chk.label}</span>
               </div>
-              <div className="check-info">
-                <div className="check-title">{chk.label}</div>
-                <div className="check-detail">{chk.detail}</div>
+              <div className="step-right">
+                <span className="step-detail monospace-tabular">{chk.detail}</span>
+                <span className={`step-badge ${chk.ok ? 'passed' : 'failed'}`}>
+                  {chk.ok ? 'Verified' : 'Failed'}
+                </span>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Recent Settlements Table */}
+      {/* Recent Settlements Table — GitHub Commit History Style */}
       <section className="audit-section settlements-section">
         <div className="section-header">
-          <h2 className="section-title">Recent Session Settlements (Double-Entry Verification)</h2>
-          <span className="section-subtitle">Showing matching equal and opposite ledger rows for the last 10 completed bookings</span>
+          <h2 className="section-title">Settlement Audit Log (Double-Entry Verification)</h2>
+          <span className="section-subtitle">Matching equal and opposite ledger records for completed pairing sessions</span>
         </div>
 
         {recent_settlements.length === 0 ? (
           <div className="empty-box">No completed sessions settled yet.</div>
         ) : (
           <div className="table-responsive">
-            <table className="audit-table">
+            <table className="audit-table github-table">
               <thead>
                 <tr>
                   <th>Topic</th>
                   <th>Learner (Debit)</th>
                   <th>Mentor (Credit)</th>
                   <th>Amount</th>
-                  <th>Proof</th>
+                  <th>Integrity Proof</th>
                   <th>Spend / Earn Entry IDs</th>
-                  <th>Settled At</th>
+                  <th>Settled</th>
                 </tr>
               </thead>
               <tbody>
                 {recent_settlements.map((s) => (
                   <tr key={s.id}>
                     <td className="cell-topic">
-                      <strong>{s.topic}</strong>
-                      <div className="cell-sub">{s.id}</div>
+                      <strong style={{ color: 'var(--accent-blue)' }}>{s.topic}</strong>
+                      <div className="cell-sub monospace-tabular">{s.id}</div>
                     </td>
                     <td>
                       <span className="user-chip debit">
@@ -265,14 +262,21 @@ export default function Audit({ currentUser }) {
                       </span>
                     </td>
                     <td className="cell-amount">
-                      <span className="badge-cr">🪙 {s.amount} cr</span>
+                      <span className="monospace-tabular" style={{ fontWeight: 600, color: '#f0f6fc' }}>
+                        {s.amount} cr
+                      </span>
                     </td>
                     <td>
-                      <span className="proof-pill">{s.running_proof}</span>
+                      <span className="github-verified-badge" title={s.running_proof}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px' }}>
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Verified
+                      </span>
                     </td>
                     <td className="cell-entries">
-                      <div className="entry-id spend">{s.spend_entry_id}</div>
-                      <div className="entry-id earn">{s.earn_entry_id}</div>
+                      <div className="entry-id spend monospace-tabular">{s.spend_entry_id}</div>
+                      <div className="entry-id earn monospace-tabular">{s.earn_entry_id}</div>
                     </td>
                     <td className="cell-time">
                       {s.completed_at ? new Date(s.completed_at).toLocaleDateString() : '—'}

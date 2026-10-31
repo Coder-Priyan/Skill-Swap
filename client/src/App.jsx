@@ -302,21 +302,41 @@ export default function App() {
       {/* Top bar / App Shell */}
       <header className="topbar">
         <div className="topbar-left">
-          <NavLink to="/" className="brand-logo">
-            <span className="logo-badge">⚡</span>
-            <span>SkillSwap</span>
+          <NavLink to="/" className="brand-logo" title="SkillSwap — Micro-Mentorship Hub">
+            <span className="brand-logo-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="4" />
+                <line x1="1.05" y1="12" x2="7" y2="12" />
+                <line x1="17.01" y1="12" x2="22.96" y2="12" />
+              </svg>
+            </span>
+            <span className="brand-text">SkillSwap</span>
+            <span className="brand-pill">Public</span>
           </NavLink>
 
           <nav>
             <ul className="nav-links">
               <li>
                 <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} end>
-                  Find Peers
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                  <span>Mentors</span>
+                  <span className="nav-badge-count">{users.length || 14}</span>
                 </NavLink>
               </li>
               <li>
                 <NavLink to="/bookings" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                  <span>My Bookings</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="18" cy="18" r="3" />
+                    <circle cx="6" cy="6" r="3" />
+                    <path d="M13 6h3a2 2 0 0 1 2 2v7" />
+                    <line x1="6" y1="9" x2="6" y2="21" />
+                  </svg>
+                  <span>Bookings</span>
                   {pendingMentorCount > 0 && (
                     <span className="nav-badge-count" title={`${pendingMentorCount} pending mentor requests`}>
                       {pendingMentorCount}
@@ -325,18 +345,28 @@ export default function App() {
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/profile" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                  Profile
-                </NavLink>
-              </li>
-              <li>
                 <NavLink to="/leaderboard" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                  Leaderboard
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                  <span>Leaderboard</span>
                 </NavLink>
               </li>
               <li>
                 <NavLink to="/audit" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                  Audit
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                  <span>Security & Audit</span>
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/profile" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  <span>Profile</span>
                 </NavLink>
               </li>
             </ul>
@@ -350,11 +380,11 @@ export default function App() {
               className={`balance-chip ${currentProfile.reserved_credits > 0 ? 'has-reserved' : ''}`}
               title={`Total balance: ${currentProfile.balance} cr | Available: ${currentProfile.available_credits} cr | Reserved: ${currentProfile.reserved_credits || 0} cr`}
             >
-              <span className="balance-icon">🪙</span>
+              <span className="balance-pulse-dot" />
               <span className="balance-amount">{currentProfile.balance} cr</span>
               {currentProfile.reserved_credits > 0 && (
                 <span className="balance-reserved-chip">
-                  ({currentProfile.reserved_credits} reserved)
+                  ({currentProfile.reserved_credits} res.)
                 </span>
               )}
             </div>
@@ -375,7 +405,11 @@ export default function App() {
               title="Reset demo data to clean seed"
               aria-label="Reset demo data"
             >
-              🔄 Reset Demo
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 4 23 10 17 10" />
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+              </svg>
+              <span>Reset Demo</span>
             </button>
           )}
 

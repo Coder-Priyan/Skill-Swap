@@ -34,7 +34,7 @@ function it(description, fn) {
   totalCount++;
   try {
     fn();
-    console.log(`  ✓ ${description}`);
+    console.log(`  PASS: ${description}`);
     passedCount++;
   } catch (err) {
     console.error(`  ✗ ${description}`);

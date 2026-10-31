@@ -19,6 +19,7 @@ export default function Directory({ currentUserId, currentProfile, onBookingCrea
   const [onlineNow, setOnlineNow] = useState(false);
   const [minLevel, setMinLevel] = useState('');
   const [sortBy, setSortBy] = useState('default');
+  const [showFilters, setShowFilters] = useState(false);
 
   // Directory results state
   const [peers, setPeers] = useState([]);
@@ -145,6 +146,13 @@ export default function Directory({ currentUserId, currentProfile, onBookingCrea
     sortBy !== 'default'
   );
 
+  const advancedFiltersCount = [
+    selectedLanguage,
+    selectedDay,
+    selectedDaypart,
+    minLevel,
+  ].filter(Boolean).length;
+
   return (
     <div className="directory-page">
       {/* Page Header */}
@@ -156,16 +164,21 @@ export default function Directory({ currentUserId, currentProfile, onBookingCrea
       </div>
 
       {/* Filter and Search Bar Card */}
-      <div className="card directory-controls-card">
-        {/* Search Input Row */}
+      <div className="directory-controls-card">
+        {/* Search Input & Quick Controls Row */}
         <div className="search-input-row">
           <div className="search-field-wrap">
-            <span className="search-icon">🔍</span>
+            <span className="search-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </span>
             <input
               type="text"
               id="peer-search-input"
               className="search-input"
-              placeholder="Search by mentor name, handle, bio, or skill..."
+              placeholder="Search peers by name, handle, bio, or skill..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -181,115 +194,134 @@ export default function Directory({ currentUserId, currentProfile, onBookingCrea
             )}
           </div>
 
-          <div className="sort-field-wrap">
-            <label htmlFor="sort-select" className="control-label">Sort by:</label>
-            <select
-              id="sort-select"
-              className="form-select control-select"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+          <div className="quick-controls-wrap">
+            {/* Quick Online Only Filter Button */}
+            <button
+              type="button"
+              className={`quick-pill-btn ${onlineNow ? 'active' : ''}`}
+              onClick={() => setOnlineNow((prev) => !prev)}
+              title="Show only mentors online now"
             >
-              <option value="default">Default (Online & Level)</option>
-              <option value="level">Highest Level</option>
-              <option value="rating">Top Rated</option>
-              <option value="online">Online First</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Filter Dropdowns Grid */}
-        <div className="filters-grid">
-          {/* Language filter */}
-          <div className="filter-col">
-            <label htmlFor="language-select" className="control-label">Language</label>
-            <select
-              id="language-select"
-              className="form-select control-select"
-              value={selectedLanguage}
-              onChange={(e) => setSelectedLanguage(e.target.value)}
-            >
-              <option value="">All Languages</option>
-              {meta?.languages.map((lang) => (
-                <option key={lang} value={lang}>{lang}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Day filter */}
-          <div className="filter-col">
-            <label htmlFor="day-select" className="control-label">Day</label>
-            <select
-              id="day-select"
-              className="form-select control-select"
-              value={selectedDay}
-              onChange={(e) => setSelectedDay(e.target.value)}
-            >
-              <option value="">Any Day</option>
-              {meta?.days.map((d) => (
-                <option key={d.day} value={d.day}>{d.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Day-part filter */}
-          <div className="filter-col">
-            <label htmlFor="daypart-select" className="control-label">Time of Day</label>
-            <select
-              id="daypart-select"
-              className="form-select control-select"
-              value={selectedDaypart}
-              onChange={(e) => setSelectedDaypart(e.target.value)}
-            >
-              <option value="">Any Time</option>
-              {meta?.dayparts.map((dp) => (
-                <option key={dp.id} value={dp.id}>{dp.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Min Level filter */}
-          <div className="filter-col">
-            <label htmlFor="minlevel-select" className="control-label">Minimum Level</label>
-            <select
-              id="minlevel-select"
-              className="form-select control-select"
-              value={minLevel}
-              onChange={(e) => setMinLevel(e.target.value)}
-            >
-              <option value="">Any Level</option>
-              {meta?.levels.map((lvl) => (
-                <option key={lvl.level} value={lvl.level}>
-                  Level {lvl.level}+ ({lvl.name})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Online Toggle & Clear Button */}
-          <div className="filter-col toggle-col">
-            <label className="toggle-label" htmlFor="online-toggle">
-              <input
-                type="checkbox"
-                id="online-toggle"
-                checked={onlineNow}
-                onChange={(e) => setOnlineNow(e.target.checked)}
-              />
-              <span className="toggle-custom-box"></span>
+              <span className={`pill-pulse-dot ${onlineNow ? 'active' : ''}`} />
               <span>Online Now</span>
-            </label>
+            </button>
+
+            {/* Sort Select */}
+            <div className="sort-field-wrap">
+              <select
+                id="sort-select"
+                className="form-select control-select compact-select"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                aria-label="Sort mentors"
+              >
+                <option value="default">Default Sort</option>
+                <option value="level">Highest Level</option>
+                <option value="rating">Top Rated</option>
+                <option value="online">Online First</option>
+              </select>
+            </div>
+
+            {/* Advanced Filters Drawer Toggle */}
+            <button
+              type="button"
+              className={`btn btn-secondary filter-toggle-btn ${showFilters || advancedFiltersCount > 0 ? 'active' : ''}`}
+              onClick={() => setShowFilters((prev) => !prev)}
+              title="Toggle detailed filters"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+              </svg>
+              <span>Filters</span>
+              {advancedFiltersCount > 0 && (
+                <span className="filter-count-badge">{advancedFiltersCount}</span>
+              )}
+            </button>
 
             {hasActiveFilters && (
               <button
                 type="button"
                 id="clear-filters-btn"
-                className="btn btn-secondary btn-sm"
+                className="btn btn-secondary btn-sm clear-btn"
                 onClick={handleClearFilters}
+                title="Reset all filters"
               >
-                Clear Filters
+                Clear
               </button>
             )}
           </div>
         </div>
+
+        {/* Expandable Advanced Filters Grid */}
+        {(showFilters || advancedFiltersCount > 0) && (
+          <div className="filters-grid advanced-drawer">
+            {/* Language filter */}
+            <div className="filter-col">
+              <label htmlFor="language-select" className="control-label">Language</label>
+              <select
+                id="language-select"
+                className="form-select control-select"
+                value={selectedLanguage}
+                onChange={(e) => setSelectedLanguage(e.target.value)}
+              >
+                <option value="">All Languages</option>
+                {meta?.languages.map((lang) => (
+                  <option key={lang} value={lang}>{lang}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Day filter */}
+            <div className="filter-col">
+              <label htmlFor="day-select" className="control-label">Day</label>
+              <select
+                id="day-select"
+                className="form-select control-select"
+                value={selectedDay}
+                onChange={(e) => setSelectedDay(e.target.value)}
+              >
+                <option value="">Any Day</option>
+                {meta?.days.map((d) => (
+                  <option key={d.day} value={d.day}>{d.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Day-part filter */}
+            <div className="filter-col">
+              <label htmlFor="daypart-select" className="control-label">Time of Day</label>
+              <select
+                id="daypart-select"
+                className="form-select control-select"
+                value={selectedDaypart}
+                onChange={(e) => setSelectedDaypart(e.target.value)}
+              >
+                <option value="">Any Time</option>
+                {meta?.dayparts.map((dp) => (
+                  <option key={dp.id} value={dp.id}>{dp.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Min Level filter */}
+            <div className="filter-col">
+              <label htmlFor="minlevel-select" className="control-label">Minimum Level</label>
+              <select
+                id="minlevel-select"
+                className="form-select control-select"
+                value={minLevel}
+                onChange={(e) => setMinLevel(e.target.value)}
+              >
+                <option value="">Any Level</option>
+                {meta?.levels.map((lvl) => (
+                  <option key={lvl.level} value={lvl.level}>
+                    Level {lvl.level}+ ({lvl.name})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
 
         {/* Topic Chips */}
         {meta?.topics && meta.topics.length > 0 && (
