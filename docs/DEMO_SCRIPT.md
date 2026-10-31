@@ -39,24 +39,47 @@ Complete these 7 steps before stepping on stage or presenting to judges:
 +--------------------------------------------------------------------------------------------------+
 | TIME      | SPEAKER / ACTION                        | SCREEN / WOW MOMENT                        |
 +--------------------------------------------------------------------------------------------------+
-| 0:00-0:45 | Pitch & Directory Exploration           | Window 1: Tanvi browsing Find Peers        |
-| 0:45-1:30 | Real-Time Booking & Credit Reservation  | Dual Windows: Live notification & badge    |
-| 1:30-2:45 | Collaborative Room & Yjs CRDT Editor   | Dual Windows: Live typing, cursors, chat   |
-| 2:45-3:30 | Immediate Settlement, Rating & Bonus   | Tanvi rates Priya -> Credits update live   |
-| 3:30-4:00 | System Audit & Demo Reset               | Audit Page (100% green) -> 1-click reset   |
+| 0:00-0:30 | Pitch & Browse Directory                | Window 1: Tanvi browsing Find Peers        |
+| 0:30-1:10 | Smart Match Deterministic Engine         | Tanvi finds Priya via explainable scoring   |
+| 1:10-1:50 | Real-Time Booking & Credit Reservation   | Dual Windows: Live notification & badge     |
+| 1:50-2:55 | Collaborative Room & Yjs CRDT Editor    | Dual Windows: Live typing, cursors, chat    |
+| 2:55-3:35 | Immediate Settlement, Rating & Bonus    | Tanvi rates Priya -> Credits update live    |
+| 3:35-4:00 | System Audit & Demo Reset                | Audit Page (100% green) -> 1-click reset    |
 +--------------------------------------------------------------------------------------------------+
 ```
 
-### Phase 1: The Problem & Skill Directory (0:00 – 0:45)
+### Phase 1: The Problem & Skill Directory (0:00 – 0:30)
 - **Talking Points**:
   - *"Traditional tutoring is transactional and expensive. SkillSwap is an egalitarian peer-mentorship network where developers exchange knowledge using a finite-supply credit economy."*
-  - *"Meet Tanvi (`usr_terminaltinkerer`), a junior learner with 5 credits. She needs help with React. In our peer directory, she finds Priya Sharma (`usr_pixelpriya`), a Level 3 Mentor."*
+  - *"Meet Tanvi (`usr_terminaltinkerer`), a junior learner with 5 credits. She needs help with React. In our peer directory, she can explore peers or switch to our explainable matching engine."*
 - **Actions in Window 1 (Tanvi)**:
   1. Click **Find Peers** (`/peers`).
-  2. Type `React` in search filter or filter by `React` chip.
-  3. Notice Priya’s profile card displays **"Level 3 • Mentor"**, 11 completed sessions, and rated 4.9★.
+  2. Notice the top view mode switcher: **Browse** and **Smart Match**.
 
-### Phase 2: Instant Booking & Credit Reservation (0:45 – 1:30)
+### Phase 1.5: Smart Match — Explainable Deterministic Matching (0:30 – 1:10)
+- **Talking Points**:
+  - *"Finding the right mentor usually means guessing or relying on black-box LLMs that hallucinate. We built Smart Match: a 100% deterministic, rule-based matching engine running on pure server logic with zero external API keys."*
+- **Actions in Window 1 (Tanvi)**:
+  1. Click **"✨ Smart Match"** tab.
+  2. In the "Describe your problem" box, paste the exact problem:
+     > `My React component re-renders too much, need help in Hindi this evening`
+  3. Select **Time of Day: Evening** (or keep Default) and press **Ctrl+Enter** (or click **"Find my best match"**).
+  4. **Expected Result**:
+     - **Detected Topics**: `React` chip automatically detected via boundary-aware keyword dictionary.
+     - **Best Match**: **Priya Sharma** (`usr_pixelpriya`) ranks **#1** with a **100% match** score and green **"★ BEST MATCH"** badge!
+     - **Reason Chips**:
+       - `✓ React` (matched topic)
+       - `✓ English` (matched preferred language)
+       - `✓ Mon slot` / `✓ Evening slot` (matched time window)
+       - `✓ Online now` (active in system)
+       - `✓ Level 3 Mentor` (mentor level 3 >= learner level 1)
+       - `✓ 4.8 stars (11)` (top rating)
+  5. Click **"How is this scored?"** expander:
+     - Shows real-time breakdown table with mathematical transparency: Topic (45 pts), Language (15 pts), Availability (15 pts), Online (10 pts), Level (10 pts), Rating (5 pts).
+  6. Click **"Request Session"** on Priya’s card:
+     - Notice **BookModal opens pre-filled**: Topic is `React`, problem description is pre-filled, and the suggested evening slot is automatically selected!
+
+### Phase 2: Instant Booking & Credit Reservation (1:10 – 1:50)
 - **Talking Points**:
   - *"To prevent double-spending without locking funds prematurely, SkillSwap computes available credits dynamically: Total Balance minus Active Reservations. Tanvi has 5 credits, enough for exactly 1 session."*
 - **Actions**:
@@ -174,3 +197,30 @@ If 10 concurrent HTTP complete requests arrive simultaneously, exactly one commi
 
 ### 12. Does the client support LAN access from other laptops or phones?
 **Answer**: Yes. The server binds to `0.0.0.0` and prints local WiFi LAN URLs (`http://192.168.x.x:4000`). All client API, Socket.io, and Yjs connections use dynamic relative origin hostnames, avoiding hardcoded `localhost` references.
+
+### 13. Why rule-based and not an LLM for Smart Match?
+**Answer**:
+1. **Zero External API Keys & Costs**: Runs 100% offline with zero cost per query, zero network hops, and zero API rate limits during high-pressure judge evaluation.
+2. **Deterministic & Unit-Testable**: The exact same query always yields the exact same ranked results and byte-identical scoring breakdown (tested in `server/tests/match.test.js`).
+3. **No Hallucinations**: Mentors are strictly matched against skills and availability slots that genuinely exist in SQLite; an LLM could hallucinate non-existent skills, time slots, or mentor identities.
+4. **Sub-millisecond Latency**: Pure JavaScript string search and scoring executes in under 2ms, providing instant UI feedback without spinning loading wheels.
+
+### 14. How does the Smart Match scoring algorithm calculate the final match percentage?
+**Answer**: The engine computes scores across 6 distinct components defined in `server/src/config.js` summing to 100 points:
+- **Topic (45 pts)**: Ratio of detected/signaled topics the mentor possesses ($45 \times \frac{\text{matched}}{\text{wanted}}$).
+- **Language (15 pts)**: Full 15 points if the mentor shares at least one preferred learner language.
+- **Availability (15 pts)**: Full 15 points if any mentor slot overlaps the preferred day and/or daypart.
+- **Online Status (10 pts)**: Full 10 points if the mentor is currently online.
+- **Mentor Level (10 pts)**: 10 points if `mentor.level > learner.level`, 5 points if equal, 0 if lower.
+- **Rating (5 pts)**: $5 \times \frac{\text{rating\_avg}}{5}$ if $\ge 3$ ratings; 2.5 pts if fewer; 0 if unrated.
+Unsignaled preferences (e.g. no time window provided) are omitted from the denominator:
+$$\text{Score} = \text{round}\left(100 \times \frac{\text{Points Earned}}{\text{Max Signaled Points}}\right)$$
+Deterministic tie-breaking orders results by: (1) Level eligibility (mentor $\ge$ learner), (2) match_score DESC, (3) online DESC, (4) rating_avg DESC, (5) sessions DESC, (6) name ASC.
+
+### 15. How would you extend Smart Match in a production environment?
+**Answer**:
+1. **Learner-Mentor Interaction History**: Apply an exponential decay penalty for mentors the learner recently paired with to encourage diverse peer connections.
+2. **Timezone Offset Computations**: Convert availability slots dynamically across UTC offsets for distributed remote developers.
+3. **Skill Affinity Ontology**: Add a lightweight synonym/graph layer where related skills (e.g., `Next.js` and `React`, or `PostgreSQL` and `SQL`) share partial credit.
+4. **Learner Credit Sensitivity**: Factor in session duration options (e.g., 15-minute quick debugging vs. 45-minute deep dives).
+

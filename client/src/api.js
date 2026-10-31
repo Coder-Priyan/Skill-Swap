@@ -317,5 +317,39 @@ export function resetDemoData() {
   });
 }
 
+/**
+ * GET /api/meta/match
+ * Fetches scoring weights and topic keyword dictionary keys.
+ */
+export function getMetaMatch() {
+  return apiRequest('/api/meta/match');
+}
+
+/**
+ * GET /api/match
+ * Smart match query for mentors based on problem text, topics, language, day, daypart, and online status.
+ * @param {object} params
+ * @param {AbortSignal} [signal]
+ */
+export function getSmartMatch(params = {}, signal = null) {
+  const searchParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== '') {
+      if (Array.isArray(value)) {
+        if (value.length > 0) {
+          searchParams.append(key, value.join(','));
+        }
+      } else {
+        searchParams.append(key, value);
+      }
+    }
+  }
+
+  const queryString = searchParams.toString();
+  const endpoint = queryString ? `/api/match?${queryString}` : '/api/match';
+  return apiRequest(endpoint, { signal });
+}
+
+
 
 

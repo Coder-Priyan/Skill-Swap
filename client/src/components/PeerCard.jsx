@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 export default function PeerCard({ peer, onBookClick }) {
+  const [showBreakdown, setShowBreakdown] = useState(false);
+
   const getBadgeClass = (level) => {
     if (level === 3) return 'badge-level-3';
     if (level === 2) return 'badge-level-2';
@@ -10,6 +12,7 @@ export default function PeerCard({ peer, onBookClick }) {
 
   const isHigher = peer.level_relation === 'higher';
   const isSame = peer.level_relation === 'same';
+  const isLevelIneligible = !peer.can_book && peer.block_reason && peer.block_reason.includes('Mentor level');
 
   const getLanguageColor = (skill = '') => {
     const s = skill.toLowerCase();
@@ -24,9 +27,17 @@ export default function PeerCard({ peer, onBookClick }) {
 
   const primarySkill = peer.skills && peer.skills[0] ? peer.skills[0] : 'Engineering';
   const langColor = getLanguageColor(primarySkill);
+  const isSmartMatch = peer.match_score !== undefined;
 
   return (
-    <div className={`peer-card ${peer.is_online ? 'is-online' : ''}`}>
+    <div className={`peer-card ${peer.is_online ? 'is-online' : ''} ${isSmartMatch && peer.is_best_match ? 'is-best-match' : ''} ${isLevelIneligible ? 'peer-card-dimmed' : ''}`}>
+      {/* Best Match Ribbon */}
+      {isSmartMatch && peer.is_best_match && (
+        <div className="best-match-ribbon" title="Top deterministic match for your criteria">
+          <span className="ribbon-star">★</span> BEST MATCH
+        </div>
+      )}
+
       {/* Top Header Row */}
       <div className="peer-card-header">
         <div className="peer-avatar-wrap">
@@ -66,6 +77,44 @@ export default function PeerCard({ peer, onBookClick }) {
           )}
         </div>
       </div>
+
+      {/* Smart Match Score Header Bar */}
+      {isSmartMatch && (
+        <div className="match-score-container" aria-label={`Match score: ${peer.match_score}%`}>
+          <div className="match-score-row">
+            <div className="match-score-badge">
+              <span className="match-score-number">{peer.match_score}%</span>
+              <span className="match-score-label">match</span>
+            </div>
+            <div className="match-score-bar-bg" aria-hidden="true">
+              <div
+                className="match-score-bar-fill"
+                style={{
+                  width: `${peer.match_score}%`,
+                  backgroundColor:
+                    peer.match_score >= 80 ? '#2ea043' : peer.match_score >= 50 ? '#388bfd' : '#8b949e',
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Reason Chips */}
+          {peer.reasons && peer.reasons.length > 0 && (
+            <div className="smart-match-reasons-row">
+              {peer.reasons.map((reason, idx) => (
+                <span
+                  key={`${reason.key}-${idx}`}
+                  className={`smart-reason-chip ${reason.ok ? 'reason-ok' : 'reason-muted'}`}
+                  title={reason.ok ? `Matched: ${reason.label}` : `Unmatched: ${reason.label}`}
+                >
+                  <span className="reason-icon">{reason.ok ? '✓' : '✕'}</span>
+                  <span className="reason-text">{reason.label}</span>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Bio Description */}
       <p className="peer-bio">{peer.bio}</p>
@@ -119,6 +168,76 @@ export default function PeerCard({ peer, onBookClick }) {
         </button>
       </div>
 
+      {/* How is this scored? Expander */}
+      {isSmartMatch && (
+        <div className="match-breakdown-section">
+          <button
+            type="button"
+            className="btn-breakdown-toggle"
+            onClick={() => setShowBreakdown((prev) => !prev)}
+            aria-expanded={showBreakdown}
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              style={{
+                transform: showBreakdown ? 'rotate(180deg)' : 'none',
+                transition: 'transform 0.2s',
+              }}
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+            <span>How is this scored?</span>
+            <span className="breakdown-score-summary">({peer.match_score}/100)</span>
+          </button>
+
+          {showBreakdown && peer.breakdown && (
+            <div className="match-breakdown-table-wrap">
+              <table className="match-breakdown-table">
+                <thead>
+                  <tr>
+                    <th>Component</th>
+                    <th>Weight</th>
+                    <th>Points</th>
+                    <th>Detail</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {peer.breakdown.map((b) => (
+                    <tr
+                      key={b.key}
+                      className={b.ok ? 'row-ok' : b.signaled ? 'row-missed' : 'row-unsignaled'}
+                    >
+                      <td className="breakdown-label-cell">
+                        <span
+                          className={`breakdown-dot ${
+                            b.ok ? 'dot-green' : b.signaled ? 'dot-red' : 'dot-gray'
+                          }`}
+                        />
+                        {b.label}
+                      </td>
+                      <td>{b.weight}%</td>
+                      <td className="points-cell">
+                        <strong>{b.points}</strong>
+                      </td>
+                      <td className="breakdown-detail-cell">{b.detail}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="breakdown-footer-note">
+                Score: round(100 × earned / max {peer.max_possible} signaled points) ={' '}
+                <strong>{peer.match_score}%</strong>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Subtle Integrated Block Reason (When Cannot Book) */}
       {!peer.can_book && peer.block_reason && (
         <div className="peer-lock-notice" title={peer.block_reason} style={{ marginTop: '8px', fontSize: '12px', color: '#8b949e', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -132,3 +251,4 @@ export default function PeerCard({ peer, onBookClick }) {
     </div>
   );
 }
+

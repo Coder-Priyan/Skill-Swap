@@ -1,7 +1,14 @@
 import express from 'express';
 import { db } from '../db.js';
 import { getUserAvailableCredits } from '../ledger.js';
-import { calculateLevel, getLevelBadge, LEVEL_RULES, SESSION_COST } from '../config.js';
+import {
+  calculateLevel,
+  getLevelBadge,
+  LEVEL_RULES,
+  SESSION_COST,
+  MATCH_WEIGHTS,
+  MATCH_KEYWORDS,
+} from '../config.js';
 
 const router = express.Router();
 
@@ -73,8 +80,24 @@ export function calculateNextSlotLabel(slots, currentDate = new Date()) {
 }
 
 /**
+ * GET /api/meta/match
+ * Exposes scoring weights and keyword dictionary topic keys for explainability.
+ */
+export function getMetaMatchHandler(req, res) {
+  try {
+    res.json({
+      weights: MATCH_WEIGHTS,
+      keyword_topics: Object.keys(MATCH_KEYWORDS).sort(),
+    });
+  } catch (err) {
+    console.error('Error in GET /api/meta/match:', err);
+    res.status(500).json({ error: 'Failed to retrieve match metadata' });
+  }
+}
+
+/**
  * GET /api/meta
- * Returns distinct topics, distinct languages, and level info for filters.
+ * Returns distinct topics, distinct languages, level info, and match scoring configuration.
  */
 export function getMetaHandler(req, res) {
   try {
@@ -132,11 +155,121 @@ export function getMetaHandler(req, res) {
       dayparts,
       session_cost: SESSION_COST,
       demo_mode: isDemoMode,
+      match: {
+        weights: MATCH_WEIGHTS,
+        keyword_topics: Object.keys(MATCH_KEYWORDS).sort(),
+      },
     });
   } catch (err) {
     console.error('Error in GET /api/meta:', err);
     res.status(500).json({ error: 'Failed to retrieve metadata' });
   }
+}
+
+/**
+ * Shared peer hydration query used by both GET /api/peers and GET /api/match.
+ * Guarantees identical object structures and zero duplicate SQL logic.
+ * 
+ * @param {string} currentUserId
+ * @param {object} [targetDb=db]
+ * @returns {Array<object>}
+ */
+export function fetchHydratedPeers(currentUserId, targetDb = db) {
+  // Get current learner stats for eligibility computation
+  const learnerMentorSessions = targetDb.prepare(`
+    SELECT COUNT(*) AS count 
+    FROM bookings 
+    WHERE mentor_id = ? AND status = 'completed'
+  `).get(currentUserId).count;
+
+  const learnerLevel = calculateLevel(learnerMentorSessions);
+  const learnerAvailableCredits = getUserAvailableCredits(currentUserId, targetDb);
+
+  const querySql = `
+    SELECT 
+      u.id, 
+      u.name, 
+      u.handle, 
+      u.avatar_color, 
+      u.bio, 
+      u.experience, 
+      u.languages, 
+      u.is_online, 
+      u.created_at,
+      (
+        SELECT COUNT(*) 
+        FROM bookings b 
+        WHERE b.mentor_id = u.id AND b.status = 'completed'
+      ) AS sessions_completed_as_mentor,
+      (
+        SELECT ROUND(AVG(rating), 1) 
+        FROM bookings b 
+        WHERE b.mentor_id = u.id AND b.rating IS NOT NULL
+      ) AS rating_avg,
+      (
+        SELECT COUNT(rating) 
+        FROM bookings b 
+        WHERE b.mentor_id = u.id AND b.rating IS NOT NULL
+      ) AS rating_count
+    FROM users u
+    WHERE u.id != ?
+  `;
+
+  const rawPeers = targetDb.prepare(querySql).all(currentUserId);
+
+  return rawPeers.map((p) => {
+    const mentorSessions = Number(p.sessions_completed_as_mentor) || 0;
+    const level = calculateLevel(mentorSessions);
+    const badge = getLevelBadge(level);
+
+    const skills = targetDb.prepare(`
+      SELECT topic FROM user_skills WHERE user_id = ? ORDER BY topic ASC
+    `).all(p.id).map((r) => r.topic);
+
+    const slots = targetDb.prepare(`
+      SELECT id, day_of_week, start_hour, end_hour 
+      FROM availability_slots 
+      WHERE user_id = ? 
+      ORDER BY day_of_week ASC, start_hour ASC
+    `).all(p.id);
+
+    const nextSlotLabel = calculateNextSlotLabel(slots);
+
+    let canBook = true;
+    let blockReason = null;
+
+    if (learnerAvailableCredits < SESSION_COST) {
+      canBook = false;
+      blockReason = `Not enough available credits (need ${SESSION_COST} cr, have ${learnerAvailableCredits} cr)`;
+    } else if (level < learnerLevel) {
+      canBook = false;
+      blockReason = `Mentor level (Level ${level}) must be greater than or equal to your level (Level ${learnerLevel})`;
+    }
+
+    const levelRelation = level > learnerLevel ? 'higher' : level === learnerLevel ? 'same' : 'lower';
+
+    return {
+      id: p.id,
+      name: p.name,
+      handle: p.handle,
+      avatar_color: p.avatar_color,
+      bio: p.bio,
+      experience: p.experience,
+      languages: p.languages ? p.languages.split(',').map((s) => s.trim()) : [],
+      is_online: Boolean(p.is_online),
+      level,
+      badge,
+      skills,
+      slots,
+      rating_avg: p.rating_avg !== null ? Number(p.rating_avg) : null,
+      rating_count: Number(p.rating_count) || 0,
+      sessions_completed_as_mentor: mentorSessions,
+      next_slot_label: nextSlotLabel,
+      can_book: canBook,
+      block_reason: blockReason,
+      level_relation: levelRelation,
+    };
+  });
 }
 
 /**

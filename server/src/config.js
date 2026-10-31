@@ -4,6 +4,32 @@ export const STARTING_CREDITS = 10;
 export const SESSION_COST = 5;
 export const BONUS_FOR_FIVE_STAR = 1;
 
+export const MATCH_WEIGHTS = {
+  topic: 45,
+  language: 15,
+  availability: 15,
+  online: 10,
+  level: 10,
+  rating: 5,
+};
+
+export const MATCH_KEYWORDS = {
+  'React': ['react', 'jsx', 'hooks', 'usestate', 'useeffect', 're-render', 'rerender', 'component', 'redux', 'zustand'],
+  'Node.js': ['node', 'nodejs', 'express', 'npm', 'middleware', 'libuv', 'cluster', 'fastify'],
+  'Python': ['python', 'pandas', 'django', 'flask', 'fastapi', 'numpy', 'pip', 'pytest'],
+  'DSA': ['array', 'tree', 'graph', 'dp', 'dynamic programming', 'recursion', 'leetcode', 'sorting', 'binary search', 'dijkstra'],
+  'SQL/Database Design': ['sql', 'query', 'join', 'schema', 'database', 'postgres', 'index', 'sqlite', 'mysql', 'prisma'],
+  'System Design': ['scalab', 'architecture', 'microservice', 'cache', 'load balanc', 'distributed', 'rate limit', 'message queue'],
+  'WebGL/Three.js': ['webgl', 'three.js', 'threejs', 'shader', 'glsl', 'canvas', 'rendering', '3d', 'mesh'],
+  'Machine Learning': ['machine learning', 'model', 'training', 'neural', 'embedding', 'llm', 'ai', 'pytorch', 'tensorflow', 'deep learning'],
+  'DevOps/Docker': ['docker', 'kubernetes', 'k8s', 'ci/cd', 'deploy', 'pipeline', 'container', 'nginx', 'terraform'],
+  'Flutter': ['flutter', 'dart', 'widget', 'stateless', 'stateful', 'cross-platform', 'mobile'],
+  'Git': ['git', 'merge conflict', 'rebase', 'branch', 'commit', 'cherry-pick', 'pull request', 'stash'],
+  'TypeScript': ['typescript', 'generics', 'interface', 'tsc', 'types', 'tsconfig', 'type error'],
+  'Java': ['java', 'spring', 'jvm', 'spring boot', 'hibernate', 'maven', 'gradle'],
+  'CSS/UI': ['css', 'flexbox', 'grid', 'layout', 'responsive', 'animation', 'styling', 'tailwind', 'sass'],
+};
+
 export const LEVEL_RULES = {
   1: { level: 1, name: 'Newcomer', minSessions: 0, maxSessions: 2 },
   2: { level: 2, name: 'Helper', minSessions: 3, maxSessions: 9 },

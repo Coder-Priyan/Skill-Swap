@@ -1,11 +1,24 @@
 import React, { useState } from 'react';
 import { createBooking } from '../api.js';
 
-export default function BookModal({ peer, currentProfile, onClose, onBookSuccess }) {
-  const [selectedTopic, setSelectedTopic] = useState(peer.skills?.[0] || '');
-  const [problemNote, setProblemNote] = useState('');
+export default function BookModal({
+  peer,
+  currentProfile,
+  initialTopic,
+  initialProblemNote,
+  initialSlotId,
+  onClose,
+  onBookSuccess,
+}) {
+  const defaultTopic =
+    initialTopic && peer.skills?.includes(initialTopic)
+      ? initialTopic
+      : peer.skills?.[0] || '';
+
+  const [selectedTopic, setSelectedTopic] = useState(defaultTopic);
+  const [problemNote, setProblemNote] = useState(initialProblemNote || '');
   const [selectedSlot, setSelectedSlot] = useState(
-    peer.slots?.[0] ? peer.slots[0].id : ''
+    initialSlotId || (peer.slots?.[0] ? peer.slots[0].id : '')
   );
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);

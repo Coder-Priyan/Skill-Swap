@@ -1,0 +1,522 @@
+{
+  "query": {
+    "problem": "My React component re-renders too much, need help in Hindi this evening",
+    "detected_topics": [
+      "React"
+    ],
+    "used_topics": [
+      "React"
+    ],
+    "languages": [
+      "English",
+      "Marathi"
+    ],
+    "day": null,
+    "daypart": "evening",
+    "onlineNow": false
+  },
+  "weights": {
+    "topic": 45,
+    "language": 15,
+    "availability": 15,
+    "online": 10,
+    "level": 10,
+    "rating": 5
+  },
+  "best_match_id": "usr_pixelpriya",
+  "results_count": 13,
+  "top_3_results_full": [
+    {
+      "id": "usr_pixelpriya",
+      "name": "Priya Sharma",
+      "handle": "PixelPriya",
+      "avatar_color": "#ec4899",
+      "bio": "Staff Frontend Engineer passionate about React internals, design systems, and responsive CSS architecture.",
+      "experience": "senior",
+      "languages": [
+        "English",
+        "Hindi"
+      ],
+      "is_online": true,
+      "level": 3,
+      "badge": "Mentor",
+      "skills": [
+        "CSS/UI",
+        "React",
+        "System Design",
+        "TypeScript"
+      ],
+      "slots": [
+        {
+          "id": "slt_pixelpriya_0",
+          "day_of_week": 1,
+          "start_hour": 14,
+          "end_hour": 18
+        },
+        {
+          "id": "slt_pixelpriya_1",
+          "day_of_week": 3,
+          "start_hour": 14,
+          "end_hour": 18
+        },
+        {
+          "id": "slt_pixelpriya_2",
+          "day_of_week": 5,
+          "start_hour": 10,
+          "end_hour": 13
+        }
+      ],
+      "rating_avg": 4.8,
+      "rating_count": 11,
+      "sessions_completed_as_mentor": 11,
+      "next_slot_label": "Mon 14:00-18:00",
+      "can_book": true,
+      "block_reason": null,
+      "level_relation": "higher",
+      "match_score": 100,
+      "max_possible": 100,
+      "breakdown": [
+        {
+          "key": "topic",
+          "label": "Topic Match",
+          "weight": 45,
+          "points": 45,
+          "signaled": true,
+          "ok": true,
+          "detail": "1/1 topics matched"
+        },
+        {
+          "key": "language",
+          "label": "Language",
+          "weight": 15,
+          "points": 15,
+          "signaled": true,
+          "ok": true,
+          "detail": "Speaks English"
+        },
+        {
+          "key": "availability",
+          "label": "Availability",
+          "weight": 15,
+          "points": 15,
+          "signaled": true,
+          "ok": true,
+          "detail": "Mon 14:00-18:00"
+        },
+        {
+          "key": "online",
+          "label": "Online Status",
+          "weight": 10,
+          "points": 10,
+          "signaled": true,
+          "ok": true,
+          "detail": "Online now"
+        },
+        {
+          "key": "level",
+          "label": "Level Match",
+          "weight": 10,
+          "points": 10,
+          "signaled": true,
+          "ok": true,
+          "detail": "Level 3 exceeds your Level 1"
+        },
+        {
+          "key": "rating",
+          "label": "Rating",
+          "weight": 5,
+          "points": 4.8,
+          "signaled": true,
+          "ok": true,
+          "detail": "4.8 avg (11 reviews)"
+        }
+      ],
+      "reasons": [
+        {
+          "key": "topic",
+          "label": "React",
+          "ok": true
+        },
+        {
+          "key": "language",
+          "label": "English",
+          "ok": true
+        },
+        {
+          "key": "availability",
+          "label": "Mon slot",
+          "ok": true
+        },
+        {
+          "key": "online",
+          "label": "Online now",
+          "ok": true
+        },
+        {
+          "key": "level",
+          "label": "Level 3 Mentor",
+          "ok": true
+        },
+        {
+          "key": "rating",
+          "label": "4.8 stars (11)",
+          "ok": true
+        }
+      ],
+      "suggested_slot_id": "slt_pixelpriya_0",
+      "rank": 1,
+      "is_best_match": true
+    },
+    {
+      "id": "usr_devdynamo",
+      "name": "Rahul Nair",
+      "handle": "DevDynamo",
+      "avatar_color": "#f59e0b",
+      "bio": "Junior frontend dev eager to help peers get comfortable with modern React hooks, TypeScript, and clean Git workflows.",
+      "experience": "junior",
+      "languages": [
+        "English",
+        "Malayalam",
+        "Hindi"
+      ],
+      "is_online": true,
+      "level": 1,
+      "badge": "Newcomer",
+      "skills": [
+        "Git",
+        "React",
+        "TypeScript"
+      ],
+      "slots": [
+        {
+          "id": "slt_devdynamo_9",
+          "day_of_week": 1,
+          "start_hour": 17,
+          "end_hour": 20
+        },
+        {
+          "id": "slt_devdynamo_10",
+          "day_of_week": 3,
+          "start_hour": 17,
+          "end_hour": 20
+        }
+      ],
+      "rating_avg": 5,
+      "rating_count": 1,
+      "sessions_completed_as_mentor": 1,
+      "next_slot_label": "Mon 17:00-20:00",
+      "can_book": true,
+      "block_reason": null,
+      "level_relation": "same",
+      "match_score": 93,
+      "max_possible": 100,
+      "breakdown": [
+        {
+          "key": "topic",
+          "label": "Topic Match",
+          "weight": 45,
+          "points": 45,
+          "signaled": true,
+          "ok": true,
+          "detail": "1/1 topics matched"
+        },
+        {
+          "key": "language",
+          "label": "Language",
+          "weight": 15,
+          "points": 15,
+          "signaled": true,
+          "ok": true,
+          "detail": "Speaks English"
+        },
+        {
+          "key": "availability",
+          "label": "Availability",
+          "weight": 15,
+          "points": 15,
+          "signaled": true,
+          "ok": true,
+          "detail": "Mon 17:00-20:00"
+        },
+        {
+          "key": "online",
+          "label": "Online Status",
+          "weight": 10,
+          "points": 10,
+          "signaled": true,
+          "ok": true,
+          "detail": "Online now"
+        },
+        {
+          "key": "level",
+          "label": "Level Match",
+          "weight": 10,
+          "points": 5,
+          "signaled": true,
+          "ok": true,
+          "detail": "Level 1 matches your Level 1"
+        },
+        {
+          "key": "rating",
+          "label": "Rating",
+          "weight": 5,
+          "points": 2.5,
+          "signaled": true,
+          "ok": true,
+          "detail": "5.0 avg (1 reviews)"
+        }
+      ],
+      "reasons": [
+        {
+          "key": "topic",
+          "label": "React",
+          "ok": true
+        },
+        {
+          "key": "language",
+          "label": "English",
+          "ok": true
+        },
+        {
+          "key": "availability",
+          "label": "Mon slot",
+          "ok": true
+        },
+        {
+          "key": "online",
+          "label": "Online now",
+          "ok": true
+        },
+        {
+          "key": "level",
+          "label": "Level 1 Newcomer",
+          "ok": true
+        },
+        {
+          "key": "rating",
+          "label": "5.0 stars (1)",
+          "ok": true
+        }
+      ],
+      "suggested_slot_id": "slt_devdynamo_9",
+      "rank": 2,
+      "is_best_match": false
+    },
+    {
+      "id": "usr_shadersorcerer",
+      "name": "Rohan Das",
+      "handle": "ShaderSorcerer",
+      "avatar_color": "#14b8a6",
+      "bio": "Creative web developer specializing in WebGL, Three.js 3D animations, and eye-candy UI interactions.",
+      "experience": "mid",
+      "languages": [
+        "English",
+        "Bengali"
+      ],
+      "is_online": true,
+      "level": 1,
+      "badge": "Newcomer",
+      "skills": [
+        "CSS/UI",
+        "React",
+        "WebGL/Three.js"
+      ],
+      "slots": [
+        {
+          "id": "slt_shadersorcerer_19",
+          "day_of_week": 2,
+          "start_hour": 16,
+          "end_hour": 20
+        },
+        {
+          "id": "slt_shadersorcerer_20",
+          "day_of_week": 6,
+          "start_hour": 14,
+          "end_hour": 18
+        }
+      ],
+      "rating_avg": null,
+      "rating_count": 0,
+      "sessions_completed_as_mentor": 0,
+      "next_slot_label": "Today 14:00-18:00",
+      "can_book": true,
+      "block_reason": null,
+      "level_relation": "same",
+      "match_score": 90,
+      "max_possible": 100,
+      "breakdown": [
+        {
+          "key": "topic",
+          "label": "Topic Match",
+          "weight": 45,
+          "points": 45,
+          "signaled": true,
+          "ok": true,
+          "detail": "1/1 topics matched"
+        },
+        {
+          "key": "language",
+          "label": "Language",
+          "weight": 15,
+          "points": 15,
+          "signaled": true,
+          "ok": true,
+          "detail": "Speaks English"
+        },
+        {
+          "key": "availability",
+          "label": "Availability",
+          "weight": 15,
+          "points": 15,
+          "signaled": true,
+          "ok": true,
+          "detail": "Tue 16:00-20:00"
+        },
+        {
+          "key": "online",
+          "label": "Online Status",
+          "weight": 10,
+          "points": 10,
+          "signaled": true,
+          "ok": true,
+          "detail": "Online now"
+        },
+        {
+          "key": "level",
+          "label": "Level Match",
+          "weight": 10,
+          "points": 5,
+          "signaled": true,
+          "ok": true,
+          "detail": "Level 1 matches your Level 1"
+        },
+        {
+          "key": "rating",
+          "label": "Rating",
+          "weight": 5,
+          "points": 0,
+          "signaled": true,
+          "ok": false,
+          "detail": "No ratings yet"
+        }
+      ],
+      "reasons": [
+        {
+          "key": "topic",
+          "label": "React",
+          "ok": true
+        },
+        {
+          "key": "language",
+          "label": "English",
+          "ok": true
+        },
+        {
+          "key": "availability",
+          "label": "Tue slot",
+          "ok": true
+        },
+        {
+          "key": "online",
+          "label": "Online now",
+          "ok": true
+        },
+        {
+          "key": "level",
+          "label": "Level 1 Newcomer",
+          "ok": true
+        },
+        {
+          "key": "rating",
+          "label": "No ratings yet",
+          "ok": false
+        }
+      ],
+      "suggested_slot_id": "slt_shadersorcerer_19",
+      "rank": 3,
+      "is_best_match": false
+    }
+  ],
+  "remaining_results_summarized": [
+    {
+      "id": "usr_scriptsage",
+      "name": "Vikram Patil",
+      "match_score": 75,
+      "rank": 4,
+      "can_book": true,
+      "block_reason": null
+    },
+    {
+      "id": "usr_bytebender",
+      "name": "Arjun Verma",
+      "match_score": 55,
+      "rank": 5,
+      "can_book": true,
+      "block_reason": null
+    },
+    {
+      "id": "usr_promptpro",
+      "name": "Meera Joshi",
+      "match_score": 45,
+      "rank": 6,
+      "can_book": true,
+      "block_reason": null
+    },
+    {
+      "id": "usr_algoace",
+      "name": "Kavita Iyer",
+      "match_score": 45,
+      "rank": 7,
+      "can_book": true,
+      "block_reason": null
+    },
+    {
+      "id": "usr_cloudpilot",
+      "name": "Ananya Sen",
+      "match_score": 38,
+      "rank": 8,
+      "can_book": true,
+      "block_reason": null
+    },
+    {
+      "id": "usr_stackstar",
+      "name": "Aman Khan",
+      "match_score": 35,
+      "rank": 9,
+      "can_book": true,
+      "block_reason": null
+    },
+    {
+      "id": "usr_bughunter",
+      "name": "Neha Gupta",
+      "match_score": 35,
+      "rank": 10,
+      "can_book": true,
+      "block_reason": null
+    },
+    {
+      "id": "usr_datadrifter",
+      "name": "Siddharth Rao",
+      "match_score": 35,
+      "rank": 11,
+      "can_book": true,
+      "block_reason": null
+    },
+    {
+      "id": "usr_queryqueen",
+      "name": "Sunita Kulkarni",
+      "match_score": 35,
+      "rank": 12,
+      "can_book": true,
+      "block_reason": null
+    },
+    {
+      "id": "usr_flutterfox",
+      "name": "Deepa Reddy",
+      "match_score": 20,
+      "rank": 13,
+      "can_book": true,
+      "block_reason": null
+    }
+  ]
+}

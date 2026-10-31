@@ -10,11 +10,12 @@ import { fileURLToPath } from 'url';
 import { db } from './db.js';
 import { runSeed } from './seed.js';
 import usersRoutes from './routes/users.js';
-import peersRoutes, { getMetaHandler } from './routes/peers.js';
+import peersRoutes, { getMetaHandler, getMetaMatchHandler } from './routes/peers.js';
 import bookingsRoutes from './routes/bookings.js';
 import ledgerRoutes from './routes/ledger.js';
 import auditRoutes from './routes/audit.js';
 import leaderboardRoutes from './routes/leaderboard.js';
+import matchRoutes from './routes/match.js';
 import { initSockets, clearAllRoomState, emitToAll } from './sockets.js';
 import { initYjs, getOpenRoomCount, closeAllRooms } from './yjs.js';
 
@@ -104,7 +105,11 @@ app.use('/api/users', usersRoutes);
 
 // Mount directory metadata and peers routes (Slice 2)
 app.get('/api/meta', getMetaHandler);
+app.get('/api/meta/match', getMetaMatchHandler);
 app.use('/api/peers', peersRoutes);
+
+// Mount match engine route (Smart Match)
+app.use('/api/match', matchRoutes);
 
 // Mount bookings routes (Slice 3)
 app.use('/api/bookings', bookingsRoutes);

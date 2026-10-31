@@ -24,9 +24,10 @@
     "test:integrity": "node server/tests/integrity.test.js",
     "test:prod": "node server/tests/prod.test.js",
     "test:demo": "node server/tests/demo.test.js",
+    "test:match": "node server/tests/match.test.js",
     "test:failsafe": "node server/tests/failsafe.js",
     "smoke": "node scripts/smoke.mjs",
-    "test:all": "npm run test:db && npm run test:bookings && npm run test:sockets && npm run test:profile && npm run test:room && npm run test:ledger && npm run test:slice7 && npm run test:integrity && npm run test:prod && npm run test:demo"
+    "test:all": "npm run test:db && npm run test:bookings && npm run test:sockets && npm run test:profile && npm run test:room && npm run test:ledger && npm run test:slice7 && npm run test:integrity && npm run test:prod && npm run test:demo && npm run test:match"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

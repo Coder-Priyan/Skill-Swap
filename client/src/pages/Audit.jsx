@@ -82,7 +82,7 @@ export default function Audit({ currentUser }) {
     <div className="page-container audit-page">
       <header className="page-header audit-page-header">
         <div>
-          <h1 className="page-title">Security & Ledger Integrity</h1>
+          <h1 className="page-title">Ledger Integrity & Audit</h1>
           <p className="page-subtitle">
             Real-time mathematical verification of double-entry credit flows, platform minting, and zero-sum settlements.
           </p>

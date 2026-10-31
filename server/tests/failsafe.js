@@ -18,6 +18,7 @@ const TEST_FILES = [
   'server/tests/integrity.test.js',
   'server/tests/prod.test.js',
   'server/tests/demo.test.js',
+  'server/tests/match.test.js',
 ];
 
 console.log('🛡️  Running Test Failsafe Verification (FORCE_FAIL=1)\n');

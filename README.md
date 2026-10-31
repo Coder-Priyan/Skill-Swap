@@ -128,8 +128,36 @@ All automated tests use plain Node.js with zero external test runners, assert st
 | `npm run test:integrity` | `server/tests/integrity.test.js` | Formally verifies the 5 platform conservation invariants: total circulating credits = total minted tokens, zero non-negative balance histories, and valid foreign keys. |
 | `npm run test:prod` | `server/tests/prod.test.js` | Validates production single-process serving: client SPA routing fallbacks (`/room/*`, `/profile`), static asset caching headers, JSON 404s, and Yjs WebSocket upgrades. |
 | `npm run test:demo` | `server/tests/demo.test.js` | Tests in-process demo reset (`POST /api/demo/reset`): atomic database re-seeding, Yjs room cleanup, socket broadcast notification, and production security disablement. |
-| `npm run test:failsafe` | `server/tests/failsafe.js` | Spawns all 10 test suites with `FORCE_FAIL=1` and asserts that every single file exits with a non-zero exit code. |
-| `npm run test:all` | *(All 10 suites)* | Runs the entire end-to-end integration test suite sequentially. |
+| `npm run test:match` | `server/tests/match.test.js` | Verifies pure deterministic Smart Match engine: keyword detection, 100-sum weights, query validation, Tanvi demo ranking, availability slots, and ledger delta conservation. |
+| `npm run test:failsafe` | `server/tests/failsafe.js` | Spawns all 11 test suites with `FORCE_FAIL=1` and asserts that every single file exits with a non-zero exit code. |
+| `npm run test:all` | *(All 11 suites)* | Runs the entire end-to-end integration test suite sequentially. |
+
+---
+
+## 🎯 Smart Match Engine (Deterministic & Explainable)
+
+SkillSwap features a pure, deterministic mentor-matching engine with zero external API dependencies, zero LLM calls, and zero external costs:
+- **Endpoints**:
+  - `GET /api/match`: Computes mentor matches based on `problem` (max 500 chars), `topic` (overrides detection), `language`, `day`, `daypart`, and `onlineNow`.
+  - `GET /api/meta/match`: Exposes scoring weights and keyword topic keys for complete client-side explainability.
+- **Component Weights** (`server/src/config.js#MATCH_WEIGHTS`, strictly sum to 100):
+  - **Topic**: 45% ($45 \times \frac{\text{matched}}{\text{wanted}}$)
+  - **Language**: 15% (Full 15 points if sharing $\ge 1$ preferred language)
+  - **Availability**: 15% (Full 15 points if overlapping day/daypart, with `suggested_slot_id`)
+  - **Online Status**: 10% (Full 10 points if `is_online`)
+  - **Mentor Level**: 10% (10 pts if mentor > learner, 5 pts if equal, 0 if lower)
+  - **Rating**: 5% ($5 \times \frac{\text{rating\_avg}}{5}$ if $\ge 3$ ratings; 2.5 pts if fewer; 0 if unrated)
+- **Score Normalization**:
+  $$\text{Score} = \text{round}\left(100 \times \frac{\sum \text{Points Earned}}{\sum \text{Max Signaled Points}}\right)$$
+  *(Components without preference signaled by learner, such as unconstrained availability, are omitted from the denominator).*
+- **Deterministic Ranking Hierarchy**:
+  1. Peers that pass the level gate (`mentor.level >= learner.level`) first; ineligible peers LAST.
+  2. `match_score` DESC
+  3. `is_online` DESC (online mentors first)
+  4. `rating_avg` DESC (nulls last)
+  5. `sessions_completed_as_mentor` DESC
+  6. `name` ASC (lexicographical)
+- **Keyword Dictionary**: Configured in `server/src/config.js#MATCH_KEYWORDS` covering all 14 skill topics with word-boundary awareness (`\b`).
 
 ---
 
@@ -138,3 +166,4 @@ All automated tests use plain Node.js with zero external test runners, assert st
 - [Live 4-Minute Demo Script & Pre-Demo Checklist](file:///f:/HackathonCodeAsap/docs/DEMO_SCRIPT.md)
 - [Judge Evaluation Matrix & Requirements Proofs](file:///f:/HackathonCodeAsap/docs/JUDGES.md)
 - [Full Technical Specification & Decisions Log](file:///f:/HackathonCodeAsap/SPEC.md)
+
