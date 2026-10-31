@@ -16,8 +16,9 @@ import ledgerRoutes from './routes/ledger.js';
 import auditRoutes from './routes/audit.js';
 import leaderboardRoutes from './routes/leaderboard.js';
 import matchRoutes from './routes/match.js';
-import { initSockets, clearAllRoomState, emitToAll } from './sockets.js';
+import { initSockets, clearAllRoomState, emitToAll, getIO } from './sockets.js';
 import { initYjs, getOpenRoomCount, closeAllRooms } from './yjs.js';
+import { getRtcConfigHandler, getVoiceRoomCount, clearAllVoiceState } from './rtc.js';
 
 dotenv.config();
 
@@ -57,6 +58,7 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     service: 'SkillSwap Backend',
     open_rooms: getOpenRoomCount(),
+    voice_rooms: getVoiceRoomCount(),
   });
 });
 
@@ -81,8 +83,9 @@ app.post('/api/demo/reset', (req, res) => {
     // 2. Close all active Yjs room documents and WebSockets
     closeAllRooms();
 
-    // 3. Clear in-memory room presence and chat histories
+    // 3. Clear in-memory room presence, voice state and chat histories
     clearAllRoomState();
+    clearAllVoiceState(getIO());
 
     // 4. Broadcast demo:reset event to all connected clients
     emitToAll('demo:reset', {
@@ -106,6 +109,7 @@ app.use('/api/users', usersRoutes);
 // Mount directory metadata and peers routes (Slice 2)
 app.get('/api/meta', getMetaHandler);
 app.get('/api/meta/match', getMetaMatchHandler);
+app.get('/api/rtc/config', getRtcConfigHandler);
 app.use('/api/peers', peersRoutes);
 
 // Mount match engine route (Smart Match)

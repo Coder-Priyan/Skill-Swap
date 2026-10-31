@@ -203,3 +203,16 @@ export function calculateBadges({ mentorSessionsCompleted = 0, acceptedBookingsC
   const details = getBadgeDetails({ mentorSessionsCompleted, acceptedBookingsCount });
   return details.filter((b) => b.earned).map((b) => b.name);
 }
+
+// WebRTC Audio Calling Configuration (Feature: Voice in the room)
+export const RTC_ENABLED = process.env.RTC_ENABLED !== 'false' && process.env.RTC_ENABLED !== '0';
+export const RTC_SIGNAL_MAX_BYTES = Number(process.env.RTC_SIGNAL_MAX_BYTES) || 16384;
+export const RTC_RATE_LIMIT = Number(process.env.RTC_RATE_LIMIT) || 60; // 60 signaling messages per 10 s per socket
+export const RTC_STUN_URLS = (process.env.RTC_STUN_URLS || 'stun:stun.l.google.com:19302')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+export const RTC_TURN_URL = process.env.RTC_TURN_URL ? process.env.RTC_TURN_URL.trim() : null;
+export const RTC_TURN_USERNAME = process.env.RTC_TURN_USERNAME ? process.env.RTC_TURN_USERNAME.trim() : null;
+export const RTC_TURN_CREDENTIAL = process.env.RTC_TURN_CREDENTIAL ? process.env.RTC_TURN_CREDENTIAL.trim() : null;
+

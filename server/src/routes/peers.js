@@ -8,6 +8,7 @@ import {
   SESSION_COST,
   MATCH_WEIGHTS,
   MATCH_KEYWORDS,
+  RTC_ENABLED,
 } from '../config.js';
 
 const router = express.Router();
@@ -155,6 +156,7 @@ export function getMetaHandler(req, res) {
       dayparts,
       session_cost: SESSION_COST,
       demo_mode: isDemoMode,
+      voice_enabled: RTC_ENABLED,
       match: {
         weights: MATCH_WEIGHTS,
         keyword_topics: Object.keys(MATCH_KEYWORDS).sort(),

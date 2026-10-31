@@ -350,6 +350,15 @@ export function getSmartMatch(params = {}, signal = null) {
   return apiRequest(endpoint, { signal });
 }
 
+/**
+ * Fetch WebRTC ICE server configuration for voice calling.
+ * @returns {Promise<{ enabled: boolean, iceServers: Array<object> }>}
+ */
+export function getRtcConfig() {
+  return apiRequest('/api/rtc/config');
+}
+
+
 
 
 

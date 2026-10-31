@@ -11,8 +11,9 @@ import {
   getBookingsSummary,
 } from '../bookings.js';
 import { settleBooking, rateBooking } from '../ledger.js';
-import { emitToUser, emitToRoom } from '../sockets.js';
+import { emitToUser, emitToRoom, getIO } from '../sockets.js';
 import { snapshotAndCloseRoom } from '../yjs.js';
+import { endRoomVoice } from '../rtc.js';
 
 const router = express.Router();
 
@@ -177,6 +178,10 @@ router.post('/:id/cancel', (req, res) => {
       userId: req.currentUserId,
     });
 
+    if (booking.room_id) {
+      endRoomVoice(booking.room_id, getIO());
+    }
+
     // Notify the other party
     const recipientId = booking.cancelled_by === 'learner' ? booking.mentor_id : booking.learner_id;
     const cancellerName = req.currentUserId === booking.learner_id ? booking.learner.name : booking.mentor.name;
@@ -270,8 +275,9 @@ router.post('/:id/complete', (req, res) => {
     const { booking, settlement, alreadySettled } = settleBooking(id, req.currentUserId);
 
     if (!alreadySettled) {
-      // 1. Snapshot code and close Yjs room
+      // 1. Snapshot code and close Yjs room & voice
       snapshotAndCloseRoom(booking.room_id, booking.id);
+      endRoomVoice(booking.room_id, getIO());
 
       // 2. Base payload for room
       const roomPayload = {

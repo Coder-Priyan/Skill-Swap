@@ -51,6 +51,15 @@ SkillSwap pairs a single-process Node.js / Express backend backed by an append-o
    - 0.0.0.0 LAN binding displaying local WiFi URLs for cross-device evaluation (phones/tablets/laptops).
    - In-process demo reset (`POST /api/demo/reset`) restores the deterministic seed and resets all rooms in a single transaction without killing the server.
 
+9. **Voice in the Room (1:1 Audio-Only WebRTC)**:
+   - Built-in, zero-dependency browser-to-browser voice calling directly inside live collaborative rooms (`/room/:bookingId`).
+   - **Deterministic Glare Prevention**: Learner is designated as the offerer (`initiator: true`), and mentor answers. Offerer waits until second peer joins and server emits `rtc:ready`.
+   - **Secure Signaling**: Relayed strictly between verified room participants over the existing Socket.io server (`rtc:join`, `rtc:signal`, `rtc:leave`, `rtc:ready`, `rtc:peer-joined`, `rtc:peer-left`, `rtc:replaced`, `rtc:ended`). Anti-spoofing guarantees sender identity from authenticated socket.
+   - **Rate Limiting & Safety**: Per-socket rate limiter (60 msgs / 10s), payload cap (16 KB), single-tab enforcement (`rtc:replaced`), and audio level monitoring via Web Audio `AnalyserNode`.
+   - **Zero Recording & Privacy**: Audio is peer-to-peer and is never recorded, never stored on disk, and leaves the credit ledger (`ledger.js`) 100% untouched.
+   - **Configurable via Env**: `RTC_ENABLED`, `RTC_SIGNAL_MAX_BYTES`, `RTC_RATE_LIMIT`, `RTC_STUN_URLS`, and optional TURN credentials (`RTC_TURN_URL`, `RTC_TURN_USERNAME`, `RTC_TURN_CREDENTIAL`).
+
+
 ---
 
 ## 💻 Prerequisites

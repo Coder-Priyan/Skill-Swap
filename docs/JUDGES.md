@@ -56,7 +56,19 @@ flowchart TD
 | **BONUS: Session Notes Archive** | **DONE** | Nav: **Session Notes** (`/notes` & `/sessions/:id`) | [`client/src/pages/SessionNotes.jsx`](file:///f:/HackathonCodeAsap/client/src/pages/SessionNotes.jsx), [`server/src/yjs.js`](file:///f:/HackathonCodeAsap/server/src/yjs.js) | `slice7.test.js` |
 | **BONUS: Rating System & Bonus Credits** | **DONE** | Learner post-session modal & Bookings Rate btn | [`client/src/components/RatingModal.jsx`](file:///f:/HackathonCodeAsap/client/src/components/RatingModal.jsx), [`server/src/ledger.js`](file:///f:/HackathonCodeAsap/server/src/ledger.js) | `slice7.test.js` |
 | **BONUS: Leaderboard & Experience Badges** | **DONE** | Nav: **Leaderboard** (`/leaderboard`) | [`client/src/pages/Leaderboard.jsx`](file:///f:/HackathonCodeAsap/client/src/pages/Leaderboard.jsx), [`server/src/routes/leaderboard.js`](file:///f:/HackathonCodeAsap/server/src/routes/leaderboard.js) | `slice7.test.js` |
-| **BONUS: Voice / Video Integration** | **NOT DONE** | *(Excluded per deliberate hackathon scoping)* | N/A | Honest admission: voice/video is not built. |
+| **BONUS: Voice in the Room (Audio-Only WebRTC)** | **Audio-only: Done** | Live Room (`/room/:id`) Chat Panel & Header | [`client/src/hooks/useVoice.js`](file:///f:/HackathonCodeAsap/client/src/hooks/useVoice.js), [`client/src/components/VoiceControls.jsx`](file:///f:/HackathonCodeAsap/client/src/components/VoiceControls.jsx), [`server/src/rtc.js`](file:///f:/HackathonCodeAsap/server/src/rtc.js) | `rtc.test.js` (11 automated test cases verifying signaling, deterministic roles, rate limiting, anti-spoofing, single-tab replacement, cleanup, zero credit impact, and zero SDP/audio persistence) |
+
+### 🎙️ Voice in the Room Architecture & Limitations
+- **Audio-Only**: Built strictly for 1:1 voice communication. Video is **NOT built** per hackathon scoping.
+- **Architecture**: Peer-to-peer WebRTC audio call mediated by the existing Socket.io server (`server/src/rtc.js`). Deterministic role assignment designates the Learner as the initiator/offerer and Mentor as answerer upon receipt of `rtc:ready`, completely eliminating WebRTC glare.
+- **Privacy & Storage**: Audio is never recorded, never stored on disk, and never routed through external cloud services. SQLite database bytes and tables are asserted to contain zero SDP (`v=0`) or ICE markers (`rtc.test.js` Case 11).
+- **Credit Invariance**: Ledger logic (`ledger.js`) is completely untouched; total ledger sum remains constant (`rtc.test.js` Case 10).
+- **Insulated Failure**: `VoiceControls` is wrapped in `VoiceErrorBoundary` and completely isolated inside try/catch blocks; any audio or WebRTC fault leaves Monaco code sync and text chat 100% operational.
+- **Known Limitations**:
+  1. **Secure Origin Required**: Browser microphone capture (`getUserMedia`) requires a secure origin (`http://localhost`, `127.0.0.1`, or HTTPS). Visiting over LAN HTTP displays a helpful inline warning explaining how to access securely or enable the Chrome flag.
+  2. **STUN / NAT**: Uses a public STUN server (`stun:stun.l.google.com:19302`) by default; TURN is supported via optional environment variables (`RTC_TURN_URL`, `RTC_TURN_USERNAME`, `RTC_TURN_CREDENTIAL`).
+  3. **1:1 Only**: Restricted strictly to the learner and mentor of the active room.
+  4. **Media Path Verification**: Server-side signaling, rate-limiting, and UI state machines are fully covered by automated tests. Real two-peer media path was verified via single-agent browser testing of UI states and is pending manual verification for simultaneous two-peer hardware audio.
 
 ---
 

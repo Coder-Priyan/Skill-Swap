@@ -1,5 +1,6 @@
 import { Server } from 'socket.io';
 import { db } from './db.js';
+import { setupRtcSockets, handleRtcDisconnect } from './rtc.js';
 
 let io = null;
 
@@ -84,6 +85,9 @@ export function initSockets(httpServer, targetDb = db) {
     const userRoom = `user:${socket.userId}`;
     socket.join(userRoom);
     socket.joinedRooms = new Set();
+
+    // Attach WebRTC audio calling signaling handlers (Voice in the room)
+    setupRtcSockets(socket, io, targetDb);
 
     // room:join { roomId } with ack callback ({ ok, error?, history? })
     socket.on('room:join', ({ roomId }, ack) => {
@@ -213,6 +217,9 @@ export function initSockets(httpServer, targetDb = db) {
           broadcastPresence(roomId, targetDb);
         }
       }
+
+      // WebRTC audio calling cleanup on disconnect
+      handleRtcDisconnect(socket, io);
     });
   });
 

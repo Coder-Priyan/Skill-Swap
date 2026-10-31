@@ -8,6 +8,7 @@ import monaco from '../monacoConfig';
 import { getBooking, startBooking, completeBooking, getCurrentUserId } from '../api';
 import { getSocket, connectSocket } from '../socket';
 import RatingModal from '../components/RatingModal.jsx';
+import VoiceControls from '../components/VoiceControls.jsx';
 
 const LANGUAGES = [
   { label: 'JavaScript', value: 'javascript' },
@@ -43,6 +44,7 @@ export default function Room() {
 
   // Presence and Chat
   const [presenceUsers, setPresenceUsers] = useState([]);
+  const [voicePeerIds, setVoicePeerIds] = useState([]);
   const [chatMessages, setChatMessages] = useState([]); // [{ id, userId, name, text, at, isSystem }]
   const [chatInput, setChatInput] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('javascript');
@@ -240,11 +242,28 @@ export default function Room() {
     const handleConnect = () => setConnStatus('live');
     const handleDisconnect = () => setConnStatus('reconnecting');
 
+    const handleVoicePeerJoined = (data) => {
+      if (data?.userId) {
+        setVoicePeerIds((prev) => Array.from(new Set([...prev, data.userId])));
+      }
+    };
+    const handleVoicePeerLeft = (data) => {
+      if (data?.userId) {
+        setVoicePeerIds((prev) => prev.filter((id) => id !== data.userId));
+      }
+    };
+    const handleVoiceEnded = () => {
+      setVoicePeerIds([]);
+    };
+
     socket.on('room:presence', handlePresence);
     socket.on('room:message', handleMessage);
     socket.on('session:ended', handleSessionEnded);
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
+    socket.on('rtc:peer-joined', handleVoicePeerJoined);
+    socket.on('rtc:peer-left', handleVoicePeerLeft);
+    socket.on('rtc:ended', handleVoiceEnded);
 
     return () => {
       socket.emit('room:leave', { roomId: currentRoomId });
@@ -253,6 +272,9 @@ export default function Room() {
       socket.off('session:ended', handleSessionEnded);
       socket.off('connect', handleConnect);
       socket.off('disconnect', handleDisconnect);
+      socket.off('rtc:peer-joined', handleVoicePeerJoined);
+      socket.off('rtc:peer-left', handleVoicePeerLeft);
+      socket.off('rtc:ended', handleVoiceEnded);
     };
   }, [booking?.room_id, handleSessionEnded]);
 
@@ -493,6 +515,9 @@ export default function Room() {
               </div>
               <span className="chip-name">{booking.learner.name}</span>
               <span className="chip-role">Learner</span>
+              {voicePeerIds.includes(booking.learner_id) && (
+                <span className="chip-voice-icon" title={`${booking.learner.name} is in voice call`} aria-label="In voice">🎙️</span>
+              )}
               <span className={`presence-dot ${isLearnerPresent ? 'online' : 'offline'}`} />
             </div>
 
@@ -503,6 +528,9 @@ export default function Room() {
               </div>
               <span className="chip-name">{booking.mentor.name}</span>
               <span className="chip-role">Mentor</span>
+              {voicePeerIds.includes(booking.mentor_id) && (
+                <span className="chip-voice-icon" title={`${booking.mentor.name} is in voice call`} aria-label="In voice">🎙️</span>
+              )}
               <span className={`presence-dot ${isMentorPresent ? 'online' : 'offline'}`} />
             </div>
           </div>
@@ -596,6 +624,18 @@ export default function Room() {
 
         {/* Live Chat Panel */}
         <div className="room-chat-panel">
+          {/* Audio-only Voice Call in Room */}
+          {!sessionEnded && (
+            <VoiceControls
+              roomId={booking.room_id}
+              booking={booking}
+              currentUserId={currentUserId}
+              onVoicePeersChange={(peers) => {
+                setVoicePeerIds((prev) => Array.from(new Set([...prev, ...peers])));
+              }}
+            />
+          )}
+
           <div className="chat-panel-header">
             <h4 style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

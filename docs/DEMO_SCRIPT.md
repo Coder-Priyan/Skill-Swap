@@ -23,6 +23,7 @@ Complete these 7 steps before stepping on stage or presenting to judges:
 3. **Open Two Independent Browser Windows (Side-by-Side)**:
    - **Window 1 (Learner)**: Navigate to `http://localhost:4000`. Switch active user in top-right switcher to **Tanvi Deshmukh (`usr_terminaltinkerer`)** (Starts with 5 credits, 1 booking capacity).
    - **Window 2 (Mentor)**: Open an **Incognito / Private Window** (to ensure isolated `sessionStorage`). Navigate to `http://localhost:4000`. Switch active user to **Priya Sharma (`usr_pixelpriya`)** (Staff Frontend Engineer, Level 3 Mentor, 65 credits).
+   - **Audio / Device Setup**: Two windows on ONE laptop: use headphones; for two devices over wifi the mic requires HTTPS or the Chrome flag `chrome://flags/#unsafely-treat-insecure-origin-as-secure` with `http://<LAN-IP>:4000` added on BOTH devices, then relaunch Chrome.
 4. **LAN / Mobile Device Ready**:
    - Note the LAN IP printed in server startup banner (e.g. `http://192.168.137.190:4000`).
    - Open on your mobile phone browser to demonstrate cross-device capability.
@@ -115,6 +116,13 @@ Complete these 7 steps before stepping on stage or presenting to judges:
      - In **Window 2 (Priya)**, select the language `TypeScript` and add: `  const [count, setCount] = useState(0);`
      - Observe concurrent keystrokes, remote cursor indicators with peer names, and sub-10ms sync latency.
      - Send a quick chat message from Priya: *"Found the missing dependency array!"*. It appears instantly on Tanvi's screen.
+  5. **OPTIONAL 30-Second Voice Step ("Voice in the Room")**:
+     - **Talking Points**: *"For real-time voice guidance, peers can jump into a 1:1 audio call right inside the room—peer-to-peer WebRTC, zero audio recording or storage, with headphones recommended."*
+     - **Click Path**:
+       1. In **Window 1 (Tanvi)**: Click **"🎙️ Join voice"** -> Allow microphone access.
+       2. In **Window 2 (Priya)**: Notice Priya's header chip now shows a live mic icon `🎙️` and voice presence badge lights up. Click **"🎙️ Join voice"** -> Allow microphone.
+       3. Both windows enter **"Connected"** state: speaking rings and live audio meters pulse when speaking. Demonstrate **Mute / Unmute** and **Leave Voice**.
+     - **FALLBACK LINE**: *If microphone permission is blocked or voice fails, calmly state: "Voice requires microphone access, but text chat and the live Monaco editor remain 100% operational." Move smoothly to Phase 4.*
 
 ### Phase 4: Atomic Settlement, Session Notes & Rating Bonus (2:45 – 3:30)
 - **Talking Points**:
