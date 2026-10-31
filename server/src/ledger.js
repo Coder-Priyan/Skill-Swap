@@ -66,7 +66,7 @@ export function getLedgerTotals(userId, targetDb = db) {
   const earnedRow = targetDb.prepare(`
     SELECT COALESCE(SUM(delta), 0) AS val 
     FROM ledger_entries 
-    WHERE user_id = ? AND kind IN ('session_earn', 'bonus')
+    WHERE user_id = ? AND kind IN ('session_earn', 'bonus', 'challenge_reward', 'notes_reward')
   `).get(userId);
 
   const spentRow = targetDb.prepare(`
@@ -482,9 +482,12 @@ export function rateBooking(bookingId, actingUserId, rating, comment = null, tar
       throw err;
     }
 
-    // Learner only
-    if (booking.learner_id !== actingUserId) {
-      const err = new Error('Only the learner can rate this booking');
+    const isLearner = booking.learner_id === actingUserId;
+    const isMentor = booking.mentor_id === actingUserId;
+
+    // Learner check
+    if (!isLearner) {
+      const err = new Error('Only the learner of this booking may submit a rating');
       err.status = 403;
       throw err;
     }
@@ -497,13 +500,37 @@ export function rateBooking(bookingId, actingUserId, rating, comment = null, tar
     }
 
     // Already rated check
-    if (booking.rating !== null && booking.rating !== undefined) {
-      const err = new Error('Booking has already been rated');
+    if (isLearner && booking.rating !== null && booking.rating !== undefined) {
+      const err = new Error('Learner has already rated this booking');
+      err.status = 409;
+      throw err;
+    }
+    if (isMentor && booking.mentor_rating !== null && booking.mentor_rating !== undefined) {
+      const err = new Error('Mentor has already rated this booking');
       err.status = 409;
       throw err;
     }
 
-    // Update booking rating
+    // Mentor rating learner
+    if (isMentor) {
+      targetDb.prepare(`
+        UPDATE bookings 
+        SET mentor_rating = ?, mentor_rating_comment = ?
+        WHERE id = ?
+      `).run(numRating, cleanComment, booking.id);
+
+      return {
+        booking: {
+          ...booking,
+          mentor_rating: numRating,
+          mentor_rating_comment: cleanComment,
+        },
+        bonusPaid: false,
+        mentor: null,
+      };
+    }
+
+    // Learner rating mentor
     targetDb.prepare(`
       UPDATE bookings 
       SET rating = ?, rating_comment = ?
@@ -594,9 +621,22 @@ export function checkIntegrity(targetDb = db) {
     FROM ledger_entries 
     WHERE kind = 'bonus'
   `).get();
+  const challengesRow = targetDb.prepare(`
+    SELECT COALESCE(SUM(delta), 0) AS total 
+    FROM ledger_entries 
+    WHERE kind = 'challenge_reward'
+  `).get();
+  const notesRow = targetDb.prepare(`
+    SELECT COALESCE(SUM(delta), 0) AS total 
+    FROM ledger_entries 
+    WHERE kind = 'notes_reward'
+  `).get();
+
   const grants = Number(grantsRow ? grantsRow.total : 0);
   const bonuses = Number(bonusesRow ? bonusesRow.total : 0);
-  const totalMinted = grants + bonuses;
+  const challengeRewards = Number(challengesRow ? challengesRow.total : 0);
+  const notesRewards = Number(notesRow ? notesRow.total : 0);
+  const totalMinted = grants + bonuses + challengeRewards + notesRewards;
 
   const deltaSumRow = targetDb.prepare(`
     SELECT COALESCE(SUM(delta), 0) AS total 
@@ -809,6 +849,8 @@ export function checkIntegrity(targetDb = db) {
     minted: {
       grants,
       bonuses,
+      challenges: challengeRewards,
+      notes: notesRewards,
       total: totalMinted,
     },
     in_balances_total: totalBalances,

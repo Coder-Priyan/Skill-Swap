@@ -16,6 +16,9 @@ import ledgerRoutes from './routes/ledger.js';
 import auditRoutes from './routes/audit.js';
 import leaderboardRoutes from './routes/leaderboard.js';
 import matchRoutes from './routes/match.js';
+import challengesRoutes from './routes/challenges.js';
+import communityRoutes from './routes/community.js';
+import activityRoutes from './routes/activity.js';
 import { initSockets, clearAllRoomState, emitToAll, getIO } from './sockets.js';
 import { initYjs, getOpenRoomCount, closeAllRooms } from './yjs.js';
 import { getRtcConfigHandler, getVoiceRoomCount, clearAllVoiceState } from './rtc.js';
@@ -127,6 +130,11 @@ app.use('/api/audit', auditRoutes);
 // Mount leaderboard routes (Slice 7)
 app.use('/api/leaderboard', leaderboardRoutes);
 
+// Mount beginner challenges & community cheat-sheets routes
+app.use('/api/challenges', challengesRoutes);
+app.use('/api/community', communityRoutes);
+app.use('/api/activity', activityRoutes);
+
 // 404 handler for unknown API routes (JSON, never HTML)
 app.all('/api/*', (req, res) => {
   res.status(404).json({ error: `Endpoint not found: ${req.method} ${req.originalUrl}` });
@@ -203,7 +211,7 @@ process.on('SIGTERM', handleShutdown);
 // Start listening if not in test environment
 if (process.env.NODE_ENV !== 'test') {
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 SkillSwap Server running at:`);
+    console.log(`[SkillSwap] Server running at:`);
     console.log(`   Local:        http://localhost:${PORT}`);
     const lanUrls = getLanUrls(PORT);
     lanUrls.forEach((url) => {

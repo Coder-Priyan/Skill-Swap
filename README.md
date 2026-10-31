@@ -1,178 +1,287 @@
-# SkillSwap — Micro-Mentorship & Skill Exchange Hub
+# SkillSwap
 
-SkillSwap is an audit-verifiable, peer-to-peer micro-mentorship and live code collaboration platform where developers exchange focused 1-on-1 assistance with experienced peers. Operating on an append-only SQLite credit ledger, users spend platform tokens to receive help and earn tokens by mentoring others.
+> Real-time peer-to-peer micro-mentorship & collaborative pairing cockpit powered by double-entry credit escrow, CRDT code synchronization, and encrypted WebRTC audio.
 
----
-
-## 🏛️ Architecture
-
-SkillSwap pairs a single-process Node.js / Express backend backed by an append-only SQLite double-entry ledger (`WAL` mode) and in-memory Yjs CRDT synchronization with a Vite React client featuring Monaco live code collaboration, real-time Socket.io presence, and a public audit verification endpoint.
-
----
-
-## 🚀 Key Features
-
-1. **Double-Entry Append-Only Credit Ledger**:
-   - Zero mutable balance columns. User balances and running balances are computed dynamically as `SUM(delta)`.
-   - Atomic settlements in single transactions (`session_spend` -5 / `session_earn` +5) enforced by `UNIQUE(booking_id, kind)`.
-   - Closed-loop platform credit conservation: Total circulating credits always strictly match total minted platform tokens.
-
-2. **Full Public Auditability (`/audit`)**:
-   - Open to every valid authenticated user (no opaque administrative barriers).
-   - Real-time verification of 7 mathematical integrity checks (conservation law, matching settlement pairs, historical non-negative balance invariants, booking foreign key integrity, valid bonus links, and duplicate settlement prevention).
-   - Live side-by-side settlement proofs (`-5 / +5`) and socket-driven real-time refresh.
-
-3. **Peer Directory & Micro-Mentorship Booking Flow**:
-   - Searchable peer directory with skill, language, and online filtering.
-   - Smart booking rules: `mentor.level >= learner.level`, single active booking between peers, and dynamic credit availability calculation (`balance - reserved_credits`).
-   - Real-time booking state machine: `requested` → `accepted` / `declined` / `cancelled` → `in_progress` → `completed`.
-
-4. **Live Collaborative Code Room (`/room/:bookingId`)**:
-   - High-performance Monaco code editor synchronized in real time via Yjs CRDTs over WebSockets.
-   - Dual-presence tracking (who is online and active in the session).
-   - Ephemeral in-room chat with timestamped messaging.
-   - Instant single-transaction atomic settlement on session completion with final code snapshotting.
-
-5. **5-Star Mentorship Ratings & Bonus Minting**:
-   - Learners rate completed sessions (1–5 stars) with optional feedback comments.
-   - 5-star ratings mint exactly `+1` platform bonus credit awarded directly to the mentor within the same transaction.
-   - Full idempotency protection preventing duplicate reviews or duplicate bonus awards.
-
-6. **Public Mentorship Leaderboard (`/leaderboard`)**:
-   - Dynamic rankings highlighting top community mentors across 4 deterministic tie-breakers (completed mentor sessions DESC, average rating DESC, total credits earned DESC, name ASC).
-   - Visual podium for top 3 mentors (Gold, Silver, Bronze) and personalized user rank indicator.
-
-7. **Session Code Archive & Notes (`/sessions/:bookingId`)**:
-   - Read-only code archive preserved in the session's selected programming language with instant code download (`.js`, `.py`, `.ts`, etc.).
-   - Persistent, editable collaborative session summary notes for participants.
-
-8. **Production Mode & In-Process Demo Reset**:
-   - Single-process production deployment: Express serves optimized static assets and handles SPA routing fallback for `/room/*` and `/profile`.
-   - 0.0.0.0 LAN binding displaying local WiFi URLs for cross-device evaluation (phones/tablets/laptops).
-   - In-process demo reset (`POST /api/demo/reset`) restores the deterministic seed and resets all rooms in a single transaction without killing the server.
-
-9. **Voice in the Room (1:1 Audio-Only WebRTC)**:
-   - Built-in, zero-dependency browser-to-browser voice calling directly inside live collaborative rooms (`/room/:bookingId`).
-   - **Deterministic Glare Prevention**: Learner is designated as the offerer (`initiator: true`), and mentor answers. Offerer waits until second peer joins and server emits `rtc:ready`.
-   - **Secure Signaling**: Relayed strictly between verified room participants over the existing Socket.io server (`rtc:join`, `rtc:signal`, `rtc:leave`, `rtc:ready`, `rtc:peer-joined`, `rtc:peer-left`, `rtc:replaced`, `rtc:ended`). Anti-spoofing guarantees sender identity from authenticated socket.
-   - **Rate Limiting & Safety**: Per-socket rate limiter (60 msgs / 10s), payload cap (16 KB), single-tab enforcement (`rtc:replaced`), and audio level monitoring via Web Audio `AnalyserNode`.
-   - **Zero Recording & Privacy**: Audio is peer-to-peer and is never recorded, never stored on disk, and leaves the credit ledger (`ledger.js`) 100% untouched.
-   - **Configurable via Env**: `RTC_ENABLED`, `RTC_SIGNAL_MAX_BYTES`, `RTC_RATE_LIMIT`, `RTC_STUN_URLS`, and optional TURN credentials (`RTC_TURN_URL`, `RTC_TURN_USERNAME`, `RTC_TURN_CREDENTIAL`).
-
+**Problem Statement 05:** Micro-Mentorship & Skill Exchange Hub  
+**Team:** Code ASAP  
+**Members:**
+- `Sandeep Singh Mehta` (`Sandeep123-sys`)
+- `Abhishek Dhapola` (`abdhapola20`)
+- `Aditya Mehra` (`ADITYAMEHRA247`)
+- `Deepak Kumar Kabi` (`deepakkabi`)
+- `Priyanshu Dangi` (`Coder-Priyan`)
 
 ---
 
-## 💻 Prerequisites
+## Problem Statement
 
-- **Node.js**: v18.0.0 or higher (v22+ recommended)
-- **npm**: v9.0.0 or higher
-- **Operating System**: Windows (PowerShell compatible), macOS, or Linux
+Traditional developer mentorship platforms (e.g., ADPList, Topmate, Superpeer) suffer from crippling structural friction:
+1. **Passive & Disconnected:** Sessions take place over awkward third-party video calls where mentors talk *at* learners rather than pairing inside a shared, synchronized development environment.
+2. **High Friction Scheduling & Flakes:** Rigid multi-day calendar bookings lead to high cancellation rates and zero real-time accountability.
+3. **Flawed Incentives & The "Cold-Start" Deficit:** High financial costs exclude aspiring engineers. Conversely, free community Discord servers suffer from no verified quality filter, free-rider burnout, and no mechanism for beginners to earn guidance if they lack immediate expertise to teach.
 
 ---
 
-## ⚡ Quick Start & Production Mode
+## Solution
 
-### 1. Installation
-```powershell
+SkillSwap transforms micro-mentorship into an interactive, high-density pair programming exchange. Developers connect for focused, 30-minute hands-on problem-solving sessions inside an integrated browser IDE with zero external tooling required.
+
+- **Double-Entry Escrow Ledger:** 5 credits are locked in cryptographic-grade escrow upon booking and settled atomically upon session completion.
+- **Real-Time CRDT Code Synchronization:** Powered by Yjs and Microsoft Monaco Editor for collision-free multi-cursor pair programming.
+- **1:1 Peer-to-Peer Encrypted Voice:** Native browser WebRTC audio channel negotiated via Socket.io signaling.
+- **Multi-Track Earning Economy:** Learners with depleted credits can replenish their ledger through algorithmic **Daily Bug Hunt** challenges and verified **Community Cheat-Sheets** contributions.
+- **Deterministic Peer Matching:** Multi-parameter ranking algorithm scoring topic relevance, language compatibility, availability windows, and mentor reputation.
+
+---
+
+## Features
+
+### 1. Collaborative Pairing Studio (`/room/:bookingId`)
+- **VS Code Monaco Engine:** Full code editor experience in the browser with syntax highlighting (JavaScript, TypeScript, Python, C++, HTML, CSS, SQL), line numbers, and minimap.
+- **Yjs CRDT Engine:** Conflict-free Replicated Data Type engine over binary WebSocket streams (`/yjs`), guaranteeing zero typing overwrite race conditions.
+- **Encrypted WebRTC Audio:** 1:1 low-latency voice calling directly in-browser. No Zoom, Google Meet, or Discord links required.
+- **Persistent Session Artifacts:** Real-time dual-cursor notes and live code automatically freeze into an immutable read-only snapshot upon session completion (`/sessions/:bookingId`).
+
+### 2. Double-Entry Escrow & Financial Guardrails (`/audit`)
+- **Atomic Escrow Locking:** Initiating a session locks 5 credits in escrow (`status: 'escrow'`). Credits can neither be double-spent nor vanish.
+- **Zero Fractional Drift:** Pure integer math ensures the system-wide credit supply always satisfies:
+  $$\sum \text{User Balances} + \text{Active Escrows} = \text{Initial Supply} + \sum \text{Verified Incentives}$$
+- **Full Transaction Ledger:** Real-time audit trail recording timestamped transfers, transaction hashes, sender/receiver references, and verifiable integrity checksums.
+
+### 3. Sustainable Earning Economy (`/challenges` & `/community`)
+- **Daily Bug Hunt Engine:** 5 daily rotating software debugging challenges (Python, JavaScript, TypeScript, Memory Leaks, Async Pitfalls). Verified automated grading credits +3 to +5 credits directly to the user's ledger.
+- **Community Cheat-Sheet Repository:** High-yield reference guides with instant copy/download controls. Publishing community-verified technical guides rewards +2 credits.
+- **Streak & Activity Heatmap:** GitHub-style 10-week telemetry tracking daily activity, current streak, and longest streaks on developer profiles.
+
+### 4. Deterministic Smart Matching (`/`)
+- **Deterministic Component Weights** (Strictly sums to 100, zero external LLM dependencies):
+  - **Topic Overlap (45%)**: $45 \times \frac{\text{matched}}{\text{wanted}}$ based on word-boundary keyword dictionary.
+  - **Language Compatibility (15%)**: Full 15 pts if sharing $\ge 1$ preferred programming language.
+  - **Availability Overlap (15%)**: Full 15 pts if overlapping day/daypart with instant slot reservation.
+  - **Online Status (10%)**: Full 10 pts for active online mentors ready to pair immediately.
+  - **Mentor Level (10%)**: 10 pts if mentor level > learner level, 5 pts if equal, 0 if lower.
+  - **Reputation Rating (5%)**: $5 \times \frac{\text{rating\_avg}}{5.0}$ (for $\ge 3$ verified ratings).
+- **Score Normalization**:
+  $$\text{Score} = \text{round}\left(100 \times \frac{\sum \text{Points Earned}}{\sum \text{Max Signaled Points}}\right)$$
+- **Studio Spotlight Terminal:** Raycast/Linear-inspired inspection pane with live status telemetry, technical credentials, hourly rate verification, and one-click slot reservation.
+
+### 5. Level Progression & Reputation
+- **Three-Tier Progression System:** Level 1 Associate &rarr; Level 2 Peer Guide &rarr; Level 3 Senior Mentor.
+- **Mutual Post-Session Feedback:** Both participants submit structured ratings and technical tags, feeding directly into Bayesian rating averages and leaderboard positioning (`/leaderboard`).
+
+---
+
+## Tech Stack
+
+Exact package versions from [client/package.json](client/package.json) and [server/package.json](server/package.json):
+
+| Technology | Layer | Version | Architecture Role |
+| :--- | :--- | :--- | :--- |
+| **React** | Client | `18.3.1` | Reactive component architecture and single-page view routing |
+| **Vite** | Client Bundler | `5.4.11` | Hot module replacement (HMR), tree-shaking, and asset compilation |
+| **Monaco Editor** | Client IDE | `0.57.0` | Microsoft VS Code browser editing engine |
+| **Yjs** | Client / Server | `13.6.33` | Conflict-Free Replicated Data Type (CRDT) document state engine |
+| **Y-Monaco** | Client | `0.1.6` | Real-time binding layer connecting Yjs shared text to Monaco models |
+| **Y-WebSocket** | Client / Server | `1.5.4` | Binary WebSocket communication provider for Yjs documents |
+| **React Router DOM** | Client | `6.28.0` | Client-side routing (`/`, `/bookings`, `/room/:id`, `/challenges`, etc.) |
+| **Node.js + Express** | Server | `4.21.2` | REST API routing, session management, and ledger transaction orchestration |
+| **Better-SQLite3** | Database | `11.8.1` | Ultra-fast embedded synchronous SQL database with WAL mode and ACID transactions |
+| **Socket.io** | Real-time WebSockets | `4.8.4` | Live presence, session negotiation alerts, and WebRTC SDP signaling |
+| **WebRTC** | Voice | *Native API* | Browser-native 1:1 peer-to-peer encrypted audio stream |
+| **Concurrently** | Monorepo Tooling | `^9.1.2` | Simultaneous client and server process orchestrator |
+
+---
+
+## How It Works: High-Throughput Pairing Flow
+
+```
+[ Learner (Browser) ]                  [ SkillSwap Server (Port 4000) ]                 [ Mentor (Browser) ]
+         │                                              │                                              │
+         ├──── 1. POST /api/bookings ──────────────────>│                                              │
+         │     (5 Credits Locked into Escrow)           │──── 2. Socket.io ('booking:new') ───────────>│
+         │                                              │     (Instant notification banner)            │
+         │                                              │                                              │
+         │                                              │<─── 3. POST /api/bookings/:id/accept ────────┤
+         │<─── 4. Socket.io ('booking:accepted') ───────┤                                              │
+         │                                              │                                              │
+         │ ══════════════════════════ [ JOIN LIVE PAIRING ROOM #101 ] ════════════════════════════════ │
+         │                                              │                                              │
+         │ <══════════ 5. Monaco Editor Sync (via Y-WebSocket CRDT on /yjs) ═════════════════════════> │
+         │ <══════════ 6. Room Chat & Live Telemetry (via Socket.io channel) ════════════════════════> │
+         │ <══════════ 7. WebRTC Audio Stream (Direct P2P Encrypted Voice) ══════════════════════════> │
+         │                                              │                                              │
+         │ ══════════════════════════ [ END SESSION & ESCROW SETTLEMENT ] ════════════════════════════ │
+         │                                              │                                              │
+         ├──── 8. POST /api/bookings/:id/complete ─────>│                                              │
+         │                                              │ ──> Atomic SQLite Transaction:               │
+         │                                              │     • Release 5 cr from escrow to Mentor     │
+         │                                              │     • Append double-entry ledger entry       │
+         │                                              │     • Freeze Monaco doc to session notes     │
+         │                                              │                                              │
+         │<─── 9. Session Settled Event ────────────────┴──── 9. Session Settled Event ───────────────>│
+         │                                                                                             │
+         │ ══════════════════════════ [ MUTUAL POST-SESSION RATINGS ] ════════════════════════════════ │
+         │                                                                                             │
+         ├──── 10. POST /api/bookings/:id/rate ────────>│                                              │
+         │         (5-Star Bonus: +1 platform bonus)    │                                              │
+```
+
+---
+
+## Double-Entry Ledger Mechanics
+
+SkillSwap implements strict accounting principles to eliminate phantom credits and unauthorized inflation:
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                      DOUBLE-ENTRY LEDGER AUDIT                         │
+├────────────────────────────────────────────────────────────────────────┤
+│ Total Circulating Credits    = Sum of all active user wallets          │
+│ In-Flight Escrow Credits     = Sum of all pending/active session costs │
+│ Minted System Incentives     = Bug Hunt rewards + Sheet rewards        │
+├────────────────────────────────────────────────────────────────────────┤
+│ INVARIANT:                                                             │
+│ Total Circulating + In-Flight Escrows === Initial Base + Total Rewards │
+│ STATUS: VERIFIED (0 discrepancies across all audit checkpoints)        │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Setup Instructions
+
+### 1. Clone & Install Dependencies
+```bash
+git clone https://github.com/Coder-Priyan/Skill-Swap.git
+cd Skill-Swap
+
+# Install root dependencies
 npm install
+
+# Install server dependencies
+cd server && npm install
+
+# Install client dependencies
+cd ../client && npm install
+cd ..
 ```
 
-### 2. Production Mode (Recommended for Demos & Judging)
-Builds the client SPA, resets the database to the deterministic seed, and starts the unified single-process server:
-```powershell
-npm run demo:prod
+### 2. Seed Database
+Initialize SQLite database with pre-configured personas, mock sessions, availability slots, and verified ledger transactions:
+```bash
+npm run seed
 ```
-The server listens on `0.0.0.0:4000` and displays:
-```
-🚀 SkillSwap Server running at:
-   Local:        http://localhost:4000
-   On your wifi: http://192.168.x.x:4000
-   Health:       http://localhost:4000/api/health
-   Users:        http://localhost:4000/api/users
-```
-Open `http://localhost:4000` or the WiFi URL on any phone or laptop on the same local network!
 
-### 3. Development Mode
-To run client (Vite HMR on port 5173) and backend API (Express on port 4000) concurrently:
-```powershell
+### 3. Run Development Server
+Start both Express backend (Port 4000) and Vite frontend (Port 5173) concurrently:
+```bash
 npm run dev
 ```
 
-### 4. In-Process Demo Reset
-To restore the platform to the initial clean seed at any time during an active demo:
-- **From the UI**: Click the **"🔄 Reset Demo"** button in the top navigation bar.
-- **From the CLI**:
-  ```powershell
-  npm run demo:reset
-  ```
+- **Frontend Client:** [http://localhost:5173](http://localhost:5173)
+- **Backend API:** [http://localhost:4000](http://localhost:4000)
+- **CRDT WebSocket:** `ws://localhost:4000/yjs`
+- **API Health Check:** [http://localhost:4000/api/health](http://localhost:4000/api/health)
+
+### 4. Running Over Local WiFi (Two Laptops / Cross-Device Testing)
+SkillSwap is engineered for live two-laptop demonstrations. When the server boots, it outputs LAN endpoints:
+```bash
+# Example server output on startup:
+[SkillSwap] Server running at:
+   Local:        http://localhost:4000
+   On your wifi: http://192.168.1.15:4000
+   Health:       http://localhost:4000/api/health
+```
+1. Open `http://<YOUR_LAN_IP>:5173` on Laptop B.
+2. Select **Arjun** on Laptop A and **Priya** on Laptop B using the top-right persona switcher.
+3. Book a session, join the pairing room, and test simultaneous real-time code collaboration and P2P voice calling across devices.
 
 ---
 
-## 🧪 Smoke Testing & Verification
+## Test Suite
 
-SkillSwap provides an automated cross-platform HTTP smoke test that verifies all critical API contracts, header-based balance privacy, and audit conservation rules against a running server:
-```powershell
-npm run smoke
-```
-Default target is `http://localhost:4000`. Set `BASE_URL` in environment to target a remote or alternate port:
-```powershell
-$env:BASE_URL="http://localhost:4100"; npm run smoke; $env:BASE_URL=""
+SkillSwap comes equipped with a comprehensive automated test suite covering database operations, transaction integrity, socket notifications, and WebRTC negotiation:
+
+```bash
+# Run all automated tests
+npm run test:all
+
+# Individual test runners:
+npm run test:db          # Database connection, schemas, and indexing sanity
+npm run test:bookings    # Booking lifecycle, status transitions, and conflicts
+npm run test:ledger      # Double-entry invariants and escrow balance deduction
+npm run test:sockets     # Real-time WebSocket connection and event dispatching
+npm run test:room        # Live room authorization and read-only freeze state
+npm run test:match       # Deterministic match ranking engine validation
+npm run test:rtc         # WebRTC SDP signaling exchange
+npm run test:integrity   # Ledger zero-knowledge and conservation checks
+npm run smoke            # Full-stack integration smoke test
 ```
 
 ---
 
-## 🛡️ Test Suite Reference
+## REST API Reference
 
-All automated tests use plain Node.js with zero external test runners, assert strict error handling, and exit non-zero on failure. Every test script honors `FORCE_FAIL=1` for failsafe testing.
-
-| Command | File | What it Proves |
+| Endpoint | Method | Description |
 | :--- | :--- | :--- |
-| `npm run test:db` | `server/tests/db-sanity.js` | Verifies SQLite schema creation, foreign key enforcement, uniqueness constraints, and the node:sqlite compatibility fallback. |
-| `npm run test:bookings` | `server/tests/bookings.test.js` | Validates the complete booking state machine (`requested` → `accepted` → `in_progress` → `completed`), mentor level gates (`mentor.level >= learner.level`), and duplicate booking prevention. |
-| `npm run test:sockets` | `server/tests/sockets.test.js` | Proves real-time Socket.io delivery: authenticated user rooms, booking event broadcasts, room joining, and disconnect handling. |
-| `npm run test:profile` | `server/tests/profile.test.js` | Tests user profile retrieval, skill associations, availability slots, and strict ledger privacy (balance fields hidden from other users). |
-| `npm run test:room` | `server/tests/room.test.js` | Confirms live room access control (rejects non-participants), Yjs CRDT synchronization convergence across concurrent edits, and in-room chat. |
-| `npm run test:ledger` | `server/tests/ledger.test.js` | Demonstrates double-entry settlement atomicity, double-spend prevention under concurrent requests, and running balance calculation. |
-| `npm run test:slice7` | `server/tests/slice7.test.js` | Proves 5-star review bonus minting (+1 credit), idempotent rating submissions, session notes code persistence, and mentor leaderboard rankings. |
-| `npm run test:integrity` | `server/tests/integrity.test.js` | Formally verifies the 5 platform conservation invariants: total circulating credits = total minted tokens, zero non-negative balance histories, and valid foreign keys. |
-| `npm run test:prod` | `server/tests/prod.test.js` | Validates production single-process serving: client SPA routing fallbacks (`/room/*`, `/profile`), static asset caching headers, JSON 404s, and Yjs WebSocket upgrades. |
-| `npm run test:demo` | `server/tests/demo.test.js` | Tests in-process demo reset (`POST /api/demo/reset`): atomic database re-seeding, Yjs room cleanup, socket broadcast notification, and production security disablement. |
-| `npm run test:match` | `server/tests/match.test.js` | Verifies pure deterministic Smart Match engine: keyword detection, 100-sum weights, query validation, Tanvi demo ranking, availability slots, and ledger delta conservation. |
-| `npm run test:failsafe` | `server/tests/failsafe.js` | Spawns all 11 test suites with `FORCE_FAIL=1` and asserts that every single file exits with a non-zero exit code. |
-| `npm run test:all` | *(All 11 suites)* | Runs the entire end-to-end integration test suite sequentially. |
+| `/api/health` | `GET` | System heartbeat, uptime, active socket count, and ledger health |
+| `/api/peers` | `GET` | Query available mentors with skills, rating, and availability filter |
+| `/api/peers/match` | `POST` | Deterministic smart match scoring against challenge text |
+| `/api/bookings` | `GET / POST` | List user bookings or create a new booking with escrow lock |
+| `/api/bookings/:id/accept` | `POST` | Accept pending session request and notify learner |
+| `/api/bookings/:id/complete` | `POST` | Settle session, release escrow credits, and freeze code snapshot |
+| `/api/bookings/:id/rate` | `POST` | Submit post-session feedback, rating score, and review tags |
+| `/api/challenges` | `GET` | Retrieve daily rotating coding bug challenges |
+| `/api/challenges/solve` | `POST` | Submit solution for automated evaluation and credit reward |
+| `/api/community` | `GET / POST` | Browse community cheat-sheets or publish a new technical guide |
+| `/api/ledger` | `GET` | Fetch double-entry transaction passbook and audit history |
+| `/api/leaderboard` | `GET` | Global rankings sorted by reputation, level, and sessions completed |
+| `/api/users/profile` | `GET / PUT` | Fetch profile details, activity heatmap, or update bio & skills |
 
 ---
 
-## 🎯 Smart Match Engine (Deterministic & Explainable)
+## Project Structure
 
-SkillSwap features a pure, deterministic mentor-matching engine with zero external API dependencies, zero LLM calls, and zero external costs:
-- **Endpoints**:
-  - `GET /api/match`: Computes mentor matches based on `problem` (max 500 chars), `topic` (overrides detection), `language`, `day`, `daypart`, and `onlineNow`.
-  - `GET /api/meta/match`: Exposes scoring weights and keyword topic keys for complete client-side explainability.
-- **Component Weights** (`server/src/config.js#MATCH_WEIGHTS`, strictly sum to 100):
-  - **Topic**: 45% ($45 \times \frac{\text{matched}}{\text{wanted}}$)
-  - **Language**: 15% (Full 15 points if sharing $\ge 1$ preferred language)
-  - **Availability**: 15% (Full 15 points if overlapping day/daypart, with `suggested_slot_id`)
-  - **Online Status**: 10% (Full 10 points if `is_online`)
-  - **Mentor Level**: 10% (10 pts if mentor > learner, 5 pts if equal, 0 if lower)
-  - **Rating**: 5% ($5 \times \frac{\text{rating\_avg}}{5}$ if $\ge 3$ ratings; 2.5 pts if fewer; 0 if unrated)
-- **Score Normalization**:
-  $$\text{Score} = \text{round}\left(100 \times \frac{\sum \text{Points Earned}}{\sum \text{Max Signaled Points}}\right)$$
-  *(Components without preference signaled by learner, such as unconstrained availability, are omitted from the denominator).*
-- **Deterministic Ranking Hierarchy**:
-  1. Peers that pass the level gate (`mentor.level >= learner.level`) first; ineligible peers LAST.
-  2. `match_score` DESC
-  3. `is_online` DESC (online mentors first)
-  4. `rating_avg` DESC (nulls last)
-  5. `sessions_completed_as_mentor` DESC
-  6. `name` ASC (lexicographical)
-- **Keyword Dictionary**: Configured in `server/src/config.js#MATCH_KEYWORDS` covering all 14 skill topics with word-boundary awareness (`\b`).
+```
+Skill-Swap/
+├── client/
+│   ├── src/
+│   │   ├── components/         # BookingCard, PeerCard, VoiceControls, RatingModal, LedgerTable
+│   │   ├── pages/
+│   │   │   ├── Directory.jsx   # Mentor search, studio terminal, and smart matching
+│   │   │   ├── Room.jsx        # Collaborative IDE with Monaco, Yjs CRDT, and WebRTC voice
+│   │   │   ├── Bookings.jsx    # Active, pending, and completed session management
+│   │   │   ├── Challenges.jsx  # Daily Bug Hunt developer challenges
+│   │   │   ├── CommunityNotes.jsx # Community cheat-sheets repository
+│   │   │   ├── Leaderboard.jsx # Verified peer rankings and top contributors
+│   │   │   ├── Audit.jsx       # Real-time ledger audit and mathematical verification
+│   │   │   └── Profile.jsx     # Developer profile, skills, and 10-week activity heatmap
+│   │   ├── api.js              # Centralized client API service
+│   │   ├── styles.css          # Engineering-grade high-density design system
+│   │   └── App.jsx             # SPA router, toast provider, and top navigation bar
+│   ├── index.html              # HTML5 entry with metadata and SEO tags
+│   └── vite.config.js          # Vite build config with Monaco worker and proxy rules
+├── server/
+│   ├── src/
+│   │   ├── db.js               # Better-SQLite3 connection and schema definitions
+│   │   ├── seed.js             # Deterministic database seeder
+│   │   ├── index.js            # Express server, Socket.io, and Y-WebSocket binary provider
+│   │   └── routes/
+│   │       ├── peers.js        # Peer queries and deterministic matching
+│   │       ├── bookings.js     # Booking lifecycle and escrow settlements
+│   │       ├── challenges.js   # Daily Bug Hunt logic and solution grading
+│   │       ├── community.js    # Community cheat-sheets management
+│   │       ├── ledger.js       # Double-entry ledger audit endpoints
+│   │       └── users.js        # Profiles, levels, and activity heatmaps
+│   └── tests/                  # Automated integration and regression test scripts
+├── scripts/                    # Production demo runners and smoke test scripts
+├── docs/                       # Hackathon demo script and judges evaluation reference
+├── package.json                # Root monorepo workspace configuration
+└── README.md                   # Project documentation
+```
 
 ---
 
-## 📖 Additional Documentation
+## License
 
-- [Live 4-Minute Demo Script & Pre-Demo Checklist](file:///f:/HackathonCodeAsap/docs/DEMO_SCRIPT.md)
-- [Judge Evaluation Matrix & Requirements Proofs](file:///f:/HackathonCodeAsap/docs/JUDGES.md)
-- [Full Technical Specification & Decisions Log](file:///f:/HackathonCodeAsap/SPEC.md)
-
+Developed by **Team Code ASAP** for Hackathon Round 3. All rights reserved.

@@ -275,10 +275,10 @@ export async function downloadLedgerCsv(userId, { kind } = {}) {
  * @param {number} rating 1..5
  * @param {string|null} [comment]
  */
-export function rateBooking(id, rating, comment = null) {
+export function rateBooking(id, rating, comment = null, role = null) {
   return apiRequest(`/api/bookings/${id}/rate`, {
     method: 'POST',
-    body: JSON.stringify({ rating, comment }),
+    body: JSON.stringify({ rating, comment, role }),
   });
 }
 
@@ -358,7 +358,58 @@ export function getRtcConfig() {
   return apiRequest('/api/rtc/config');
 }
 
+/**
+ * Fetch daily dev challenges for earning credits
+ */
+export function getChallenges() {
+  return apiRequest('/api/challenges');
+}
 
+/**
+ * Submit challenge answer to earn credits
+ */
+export function solveChallenge(challengeId, optionId) {
+  return apiRequest('/api/challenges/solve', {
+    method: 'POST',
+    body: JSON.stringify({ challengeId, optionId }),
+  });
+}
 
+/**
+ * Fetch community cheat-sheets and snippets
+ */
+export function getCommunityNotes(topic = '', q = '') {
+  const params = new URLSearchParams();
+  if (topic && topic.toLowerCase() !== 'all') params.append('topic', topic);
+  if (q && q.trim()) params.append('q', q.trim());
+  const queryString = params.toString() ? `?${params.toString()}` : '';
+  return apiRequest(`/api/community/notes${queryString}`);
+}
 
+/**
+ * Publish community cheat-sheet and award +2 credits
+ */
+export function publishCommunityNote(data) {
+  return apiRequest('/api/community/notes', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
 
+/**
+ * Upvote a community cheat-sheet
+ */
+export function upvoteCommunityNote(id) {
+  return apiRequest(`/api/community/notes/${id}/upvote`, {
+    method: 'POST',
+  });
+}
+
+/**
+ * Fetch activity streak, daily calendar check-in, and GitHub heatmap
+ * @param {string} [userId]
+ */
+export function getActivityStreak(userId) {
+  const endpoint = userId ? `/api/activity/streak/${userId}` : '/api/activity/streak';
+  return apiRequest(endpoint);
+}

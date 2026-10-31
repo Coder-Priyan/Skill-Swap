@@ -10,6 +10,8 @@ import Bookings from './pages/Bookings';
 import Profile from './pages/Profile';
 import Leaderboard from './pages/Leaderboard';
 import Audit from './pages/Audit';
+import Challenges from './pages/Challenges';
+import CommunityNotes from './pages/CommunityNotes';
 import NotFound from './pages/NotFound';
 
 // Lazy-load heavy Monaco editor pages to keep main bundle fast (Slice 5 & 7)
@@ -48,6 +50,8 @@ export default function App() {
     else if (path.startsWith('/profile') || path.startsWith('/users')) title = 'SkillSwap | Profile & Ledger';
     else if (path.startsWith('/leaderboard')) title = 'SkillSwap | Community Leaderboard';
     else if (path.startsWith('/audit')) title = 'SkillSwap | Ledger Audit & Conservation Proof';
+    else if (path.startsWith('/challenges')) title = 'SkillSwap | Daily Bug Hunt & Challenges';
+    else if (path.startsWith('/community')) title = 'SkillSwap | Community Cheat-sheets';
     else if (path.startsWith('/room')) title = 'SkillSwap | Live Pairing Room';
     else if (path.startsWith('/sessions')) title = 'SkillSwap | Session Notes Archive';
     document.title = title;
@@ -302,9 +306,9 @@ export default function App() {
       {/* Top bar / App Shell */}
       <header className="topbar">
         <div className="topbar-left">
-          <NavLink to="/" className="brand-logo" title="SkillSwap — Peer-to-Peer Micro-Mentorship">
+          <NavLink to="/" className="brand-logo" title="SkillSwap — Peer Technical Pairing">
             <span className="brand-logo-icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="16 3 21 3 21 8" />
                 <line x1="4" y1="20" x2="21" y2="3" />
                 <polyline points="21 16 21 21 16 21" />
@@ -313,7 +317,7 @@ export default function App() {
               </svg>
             </span>
             <span className="brand-text">SkillSwap</span>
-            <span className="brand-pill">Platform</span>
+            <span className="brand-pill">Hub</span>
           </NavLink>
 
           <nav>
@@ -362,6 +366,23 @@ export default function App() {
                 </NavLink>
               </li>
               <li>
+                <NavLink to="/challenges" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                  </svg>
+                  <span>Bug Hunt</span>
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/community" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                  <span>Cheat-sheets</span>
+                </NavLink>
+              </li>
+              <li>
                 <NavLink to="/profile" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -379,20 +400,34 @@ export default function App() {
           {currentProfile && (
             <div
               className={`balance-chip ${currentProfile.reserved_credits > 0 ? 'has-reserved' : ''}`}
-              title={`Total balance: ${currentProfile.balance} cr | Available: ${currentProfile.available_credits} cr | Reserved: ${currentProfile.reserved_credits || 0} cr`}
+              title={`Available: ${currentProfile.available_credits ?? currentProfile.balance} cr | Locked in Escrow: ${currentProfile.reserved_credits || 0} cr | Total: ${currentProfile.balance} cr`}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="balance-coin-svg">
                 <circle cx="12" cy="12" r="10" />
                 <path d="M12 6v12M8 10h8M8 14h6" />
               </svg>
-              <span className="balance-amount">{currentProfile.balance} cr</span>
+              <span className="balance-amount">
+                {currentProfile.available_credits !== undefined ? currentProfile.available_credits : currentProfile.balance} cr
+              </span>
               {currentProfile.reserved_credits > 0 && (
-                <span className="balance-reserved-chip">
-                  ({currentProfile.reserved_credits} res.)
+                <span className="balance-reserved-chip" title={`${currentProfile.reserved_credits} cr locked in pending bookings`}>
+                  ({currentProfile.reserved_credits} locked)
                 </span>
               )}
             </div>
           )}
+
+          {/* Quick Earn Credits Link */}
+          <NavLink
+            to="/challenges"
+            className="earn-credits-btn"
+            title="Earn credits by solving bug hunts or contributing cheat-sheets"
+          >
+            <span>Earn Credits</span>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginLeft: '4px' }}>
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+          </NavLink>
 
           {/* Demo tools button (when demo_mode is active) */}
           {demoMode && (
@@ -422,34 +457,37 @@ export default function App() {
       </header>
 
       {/* Main Content Area */}
-      <main className="main-content">
-        {loading && (
-          <div className="loading-box">
-            <div className="loading-spinner"></div>
-            <p>Loading SkillSwap environment...</p>
-          </div>
-        )}
+      {(() => {
+        const isRoomView = location.pathname.startsWith('/room');
+        return (
+          <main className={`main-content ${isRoomView ? 'main-content--room' : ''}`}>
+            {loading && (
+              <div className="loading-box">
+                <div className="loading-spinner"></div>
+                <p>Loading SkillSwap environment...</p>
+              </div>
+            )}
 
-        {error && (
-          <div className="error-box">
-            <div className="error-title">Backend Connection Error</div>
-            <p>{error}</p>
-          </div>
-        )}
+            {error && (
+              <div className="error-box">
+                <div className="error-title">Backend Connection Error</div>
+                <p>{error}</p>
+              </div>
+            )}
 
-        {!loading && !error && (
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <Directory
-                  currentUserId={currentUserId}
-                  currentProfile={currentProfile}
-                  onBookingCreated={(booking) => {
-                    addToast({
-                      type: 'success',
-                      title: 'Request Sent! 🚀',
-                      message: `Booking request sent to ${booking.mentor?.name || 'mentor'}!`,
+            {!loading && !error && (
+              <Routes>
+                <Route
+                  path="/"
+                  element={
+                    <Directory
+                      currentUserId={currentUserId}
+                      currentProfile={currentProfile}
+                      onBookingCreated={(booking) => {
+                        addToast({
+                          type: 'success',
+                      title: 'Booking Request Dispatched',
+                      message: `Pairing session request dispatched to ${booking.mentor?.name || 'mentor'}.`,
                       link: '/bookings',
                     });
                     refreshAllUserData();
@@ -538,12 +576,22 @@ export default function App() {
               element={<Audit currentUser={currentProfile} />}
             />
             <Route
+              path="/challenges"
+              element={<Challenges currentProfile={currentProfile} onCreditChange={refreshAllUserData} />}
+            />
+            <Route
+              path="/community"
+              element={<CommunityNotes currentProfile={currentProfile} onCreditChange={refreshAllUserData} />}
+            />
+            <Route
               path="*"
               element={<NotFound onNavigateHome={() => navigate('/')} />}
             />
           </Routes>
         )}
       </main>
-    </div>
+    );
+  })()}
+</div>
   );
 }

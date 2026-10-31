@@ -61,8 +61,11 @@ export default function BookModal({
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  const availableCredits = currentProfile?.available_credits || 0;
+  const availableCredits = currentProfile?.available_credits ?? 0;
+  const totalBalance = currentProfile?.balance ?? 0;
+  const reservedCredits = currentProfile?.reserved_credits ?? 0;
   const sessionCost = 5;
+  const hasEnoughCredits = availableCredits >= sessionCost;
   const remainingBalance = Math.max(0, availableCredits - sessionCost);
 
   return (
@@ -94,7 +97,7 @@ export default function BookModal({
             <div className="modal-mentor-meta">
               <span className="mentor-level-tag">Lvl {peer.level} • {peer.badge}</span>
               <span className="meta-sep">•</span>
-              <span className="mentor-rating-tag">★ {peer.rating_avg !== null ? peer.rating_avg.toFixed(1) : 'New'} ({peer.rating_count})</span>
+              <span className="mentor-rating-tag">{peer.rating_avg !== null ? `${peer.rating_avg.toFixed(1)}/5.0` : 'New'} ({peer.rating_count})</span>
               <span className="meta-sep">•</span>
               <span>{peer.sessions_completed_as_mentor} mentored</span>
             </div>
@@ -198,7 +201,14 @@ export default function BookModal({
             <div className="cost-divider" />
             <div className="cost-item">
               <span className="cost-label">Your Available Balance:</span>
-              <span className="cost-val highlight-blue">{availableCredits} cr</span>
+              <span className="cost-val highlight-blue">
+                {availableCredits} cr
+                {reservedCredits > 0 && (
+                  <span className="cost-sub-detail" title={`${reservedCredits} cr locked in escrow`}>
+                    ({reservedCredits} locked)
+                  </span>
+                )}
+              </span>
             </div>
             <div className="cost-divider" />
             <div className="cost-item">
@@ -209,6 +219,27 @@ export default function BookModal({
             </div>
           </div>
 
+          {!hasEnoughCredits && (
+            <div className="modal-insufficient-notice">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" style={{ flexShrink: 0, marginTop: '2px' }}>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <div className="insufficient-text">
+                {reservedCredits > 0 ? (
+                  <span>
+                    <strong>{reservedCredits} credits are currently locked</strong> in active bookings (Escrow). Your available balance is <strong>0 cr</strong>. Switch persona in the top-right switcher (e.g. <strong>Arjun Verma</strong>) or click <strong>Reset Demo</strong> in the top bar to release demo credits.
+                  </span>
+                ) : (
+                  <span>
+                    Insufficient balance (requires <strong>5 cr</strong>, currently <strong>0 cr</strong>). Switch persona in top-right switcher (e.g. <strong>Arjun Verma</strong>) or click <strong>Reset Demo</strong>.
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose} disabled={submitting}>
               Cancel
@@ -216,7 +247,7 @@ export default function BookModal({
             <button
               type="submit"
               className="btn btn-primary btn-confirm-booking"
-              disabled={submitting || (!peer.slots || peer.slots.length === 0) || availableCredits < sessionCost}
+              disabled={submitting || (!peer.slots || peer.slots.length === 0) || !hasEnoughCredits}
             >
               {submitting ? 'Submitting Request...' : `Confirm & Request Booking (${sessionCost} cr)`}
             </button>

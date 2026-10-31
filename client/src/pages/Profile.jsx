@@ -1,12 +1,31 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getUserProfile, getCurrentUserId } from '../api';
+import { getUserProfile, getCurrentUserId, getActivityStreak } from '../api';
 import { subscribeToSocketEvent } from '../socket';
 import LedgerTable from '../components/LedgerTable';
+
+const LANG_COLORS = {
+  React: '#61dafb',
+  TypeScript: '#3178c6',
+  JavaScript: '#f1e05a',
+  Python: '#3572A5',
+  'CSS/UI': '#563d7c',
+  'Node.js': '#026e00',
+  'System Design': '#8a63d2',
+  DSA: '#e34c26',
+  Java: '#b07219',
+  'SQL/Database Design': '#e38c00',
+  'DevOps/Docker': '#384d54',
+  Flutter: '#02569B',
+  'WebGL/Three.js': '#ff3e00',
+  Git: '#f05032',
+  'Machine Learning': '#ff6f61',
+};
 
 export default function Profile({ currentProfile }) {
   const { id } = useParams();
   const [profile, setProfile] = useState(null);
+  const [activityData, setActivityData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -19,8 +38,12 @@ export default function Profile({ currentProfile }) {
     setLoading(true);
     setError(null);
     try {
-      const data = await getUserProfile(targetUserId);
+      const [data, actData] = await Promise.all([
+        getUserProfile(targetUserId),
+        getActivityStreak(targetUserId).catch(() => null),
+      ]);
       setProfile(data);
+      if (actData) setActivityData(actData);
     } catch (err) {
       console.error('Failed to load profile:', err);
       setError(err.message || 'User not found');
@@ -139,7 +162,7 @@ export default function Profile({ currentProfile }) {
               </span>
               <span className="progress-subtext">
                 {levelProgress.level === 3 ? (
-                  <span className="max-level-text">★ Maximum Level Achieved (Mentor)</span>
+                  <span className="max-level-text">Level 3 Senior Mentor Achieved</span>
                 ) : (
                   <span>
                     <strong>{levelProgress.sessions_to_next}</strong> more {levelProgress.sessions_to_next === 1 ? 'session' : 'sessions'} to {levelProgress.next_name}
@@ -305,6 +328,72 @@ export default function Profile({ currentProfile }) {
             </div>
           </div>
 
+          {/* GitHub-Style Developer Contribution Heatmap */}
+          {activityData && (
+            <div className="card profile-card github-heatmap-card">
+              <div className="heatmap-header">
+                <div>
+                  <h3 className="section-heading" style={{ marginBottom: '4px' }}>
+                    <span>Developer Contribution Heatmap</span>
+                    <span className="badge-count-pill">
+                      {activityData.heatmap?.total_contributions || 0} Total Activities
+                    </span>
+                  </h3>
+                  <p className="heatmap-subtitle">
+                    Activity across the last 10 weeks: Bug Hunter solutions, mentorship sessions, and cheat-sheet contributions.
+                  </p>
+                </div>
+
+                <div className="heatmap-quick-stats">
+                  <div className="heatmap-stat-pill">
+                    <svg className="pill-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5z"/></svg>
+                    <span>Current Streak: <strong>{activityData.streak?.current || 1}d</strong></span>
+                  </div>
+                  <div className="heatmap-stat-pill">
+                    <svg className="pill-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    <span>Best Record: <strong>{activityData.streak?.longest || 1}d</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Grid: 7 days of week x 10 weeks */}
+              <div className="github-heatmap-container">
+                <div className="heatmap-weekdays-col">
+                  <span>Mon</span>
+                  <span>Wed</span>
+                  <span>Fri</span>
+                </div>
+                <div className="github-heatmap-grid">
+                  {activityData.heatmap?.days?.map((d) => (
+                    <div
+                      key={d.date}
+                      className={`heatmap-cell level-${d.level} ${d.is_today ? 'is-today' : ''}`}
+                      title={`${d.count} activities on ${d.formatted_date}`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Legend & Summary */}
+              <div className="heatmap-footer">
+                <span className="heatmap-footnote">
+                  {activityData.streak?.today_active
+                    ? 'Activity logged for today.'
+                    : 'No verified activities logged today yet.'}
+                </span>
+                <div className="heatmap-legend">
+                  <span className="legend-txt">Less</span>
+                  <span className="heatmap-cell level-0" title="0 activities" />
+                  <span className="heatmap-cell level-1" title="1 activity" />
+                  <span className="heatmap-cell level-2" title="2 activities" />
+                  <span className="heatmap-cell level-3" title="3-4 activities" />
+                  <span className="heatmap-cell level-4" title="5+ activities" />
+                  <span className="legend-txt">More</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Ledger Section (Own Profile Only) */}
           {isOwnProfile && (
             <div className="card profile-card">
@@ -320,8 +409,12 @@ export default function Profile({ currentProfile }) {
             <h3 className="section-heading">Skills & Topics</h3>
             <div className="chip-group">
               {profile.skills.map((skill) => (
-                <span key={skill} className="chip skill-chip">
-                  {skill}
+                <span key={skill} className="chip skill-chip gh-lang-tag">
+                  <span
+                    className="gh-lang-color-dot"
+                    style={{ backgroundColor: LANG_COLORS[skill] || '#8b949e' }}
+                  />
+                  <span>{skill}</span>
                 </span>
               ))}
             </div>

@@ -28,8 +28,8 @@ export default function UserSwitcher({ users, currentUserId, onUserChange }) {
         aria-label="Active demo user persona"
       >
         {users.map((u) => (
-          <option key={u.id} value={u.id}>
-            {u.name} (@{u.handle}) — Lvl {u.level} {u.badge}
+          <option key={u.id} value={u.id} title={`${u.name} (@${u.handle}) — Level ${u.level} ${u.badge}`}>
+            {u.name} (L{u.level})
           </option>
         ))}
       </select>

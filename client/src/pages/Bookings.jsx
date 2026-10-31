@@ -102,71 +102,79 @@ export default function Bookings({ currentUserId, onNavigate, onBookingsChange }
 
   return (
     <div className="bookings-page">
-      <div className="page-header">
-        <h1 className="page-title">My Bookings</h1>
-        <p className="page-subtitle">
-          Manage your live pairing sessions, pending requests, and mentor invitations.
-        </p>
+      {/* Minimalist Subhead */}
+      <div className="directory-subhead">
+        <div className="directory-subhead-left">
+          <div className="directory-title-row">
+            <h1 className="directory-subhead-title">Session Dispatch & Bookings</h1>
+            <span className="directory-badge-counter">{currentList.length} total</span>
+          </div>
+          <p className="directory-subhead-desc">
+            Manage your peer-programming pairing requests, join active Monaco rooms, and inspect settled double-entry escrow receipts.
+          </p>
+        </div>
+
+        <div className="directory-subhead-actions">
+          {/* Segmented Role Switcher */}
+          <div className="segmented-switcher" role="tablist" aria-label="Bookings role modes">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'learning'}
+              className={`segmented-tab ${activeTab === 'learning' ? 'selected' : ''}`}
+              onClick={() => setActiveTab('learning')}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+              </svg>
+              <span>Learning Sessions</span>
+              <span className="tab-counter-pill">{learningBookings.length}</span>
+              {pendingLearningCount > 0 && (
+                <span className="tab-pending-dot" title={`${pendingLearningCount} pending`}></span>
+              )}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'mentoring'}
+              className={`segmented-tab ${activeTab === 'mentoring' ? 'selected' : ''}`}
+              onClick={() => setActiveTab('mentoring')}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              <span>Mentoring Sessions</span>
+              <span className="tab-counter-pill">{mentoringBookings.length}</span>
+              {pendingMentoringCount > 0 && (
+                <span className="tab-ai-pill" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', borderColor: 'rgba(245, 158, 11, 0.4)' }}>
+                  {pendingMentoringCount} PENDING
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
 
-      {actionMessage && (
-        <div className="alert alert-success" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          <span>{actionMessage}</span>
+      {/* Subtle Telemetry Strip */}
+      <div className="telemetry-meta-strip">
+        <div className="telemetry-item">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Escrow-Guaranteed (5 cr / session)</span>
         </div>
-      )}
-
-      {error && (
-        <div className="alert alert-error" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          <span>{error}</span>
+        <span className="telemetry-sep">•</span>
+        <div className="telemetry-item">
+          <span className="status-dot-active" />
+          <span>Real-time Socket Sync Active</span>
         </div>
-      )}
-
-      {/* Tabs navigation */}
-      <div className="bookings-tabs-header">
-        <div className="tabs-nav">
-          <button
-            type="button"
-            className={`tab-btn ${activeTab === 'learning' ? 'active' : ''}`}
-            onClick={() => setActiveTab('learning')}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-            </svg>
-            <span>Learning Sessions</span>
-            <span className="tab-count-badge monospace-tabular">{learningBookings.length}</span>
-            {pendingLearningCount > 0 && (
-              <span className="tab-pending-dot" title={`${pendingLearningCount} pending`}></span>
-            )}
-          </button>
-          <button
-            type="button"
-            className={`tab-btn ${activeTab === 'mentoring' ? 'active' : ''}`}
-            onClick={() => setActiveTab('mentoring')}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-            <span>Mentoring Sessions</span>
-            <span className="tab-count-badge monospace-tabular">{mentoringBookings.length}</span>
-            {pendingMentoringCount > 0 && (
-              <span className="tab-urgent-badge">{pendingMentoringCount} pending</span>
-            )}
-          </button>
+        <span className="telemetry-sep">•</span>
+        <div className="telemetry-item">
+          <span>Zero-risk auto refund on decline or cancel</span>
         </div>
+      </div>
 
         {/* Filter chips */}
         <div className="status-filter-group">
@@ -199,7 +207,6 @@ export default function Bookings({ currentUserId, onNavigate, onBookingsChange }
             Closed ({currentList.filter((b) => ['declined', 'cancelled', 'completed', 'expired'].includes(b.status)).length})
           </button>
         </div>
-      </div>
 
       {/* Bookings List */}
       <div className="bookings-content">
@@ -258,8 +265,8 @@ export default function Bookings({ currentUserId, onNavigate, onBookingsChange }
         onClose={() => setRatingBooking(null)}
         onSuccess={(res) => {
           setActionMessage(res.bonusPaid
-            ? `⭐ Rating submitted! +1 bonus credit sent to ${ratingBooking?.mentor?.name || 'mentor'}`
-            : '⭐ Rating submitted successfully!'
+            ? `Rating submitted. +1 bonus credit sent to ${ratingBooking?.mentor?.name || 'mentor'}.`
+            : 'Rating submitted successfully.'
           );
           setTimeout(() => setActionMessage(null), 5000);
           fetchAllBookings();

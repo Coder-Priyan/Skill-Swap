@@ -83,17 +83,40 @@ export default function Leaderboard({ currentUser, onSelectPeer }) {
 
   return (
     <div className="page-container leaderboard-page">
-      <header className="page-header leaderboard-header">
-        <div>
-          <h1 className="page-title">Top Mentors & Helpers</h1>
-          <p className="page-subtitle">
-            Ranked by verified sessions completed, average rating, and credits earned.
+      {/* Developer Subhead */}
+      <div className="directory-subhead">
+        <div className="directory-subhead-left">
+          <div className="directory-title-row">
+            <h1 className="directory-subhead-title">Developer Matrix & Honor Roll</h1>
+            <span className="directory-badge-counter">{totalRankedMentors} ranked peers</span>
+          </div>
+          <p className="directory-subhead-desc">
+            Deterministic peer rankings calculated from verified pair-programming sessions, community ratings, and net double-entry credits earned.
           </p>
         </div>
-        <div className="leaderboard-stat-pill">
-          <span className="stat-num">{totalRankedMentors}</span> active {totalRankedMentors === 1 ? 'mentor' : 'mentors'} in community
+        <div className="directory-subhead-actions">
+          <div className="leaderboard-stat-pill">
+            <span className="stat-num">{totalRankedMentors}</span> active in community
+          </div>
         </div>
-      </header>
+      </div>
+
+      {/* Subtle Telemetry Strip */}
+      <div className="telemetry-meta-strip" style={{ marginBottom: '2rem' }}>
+        <div className="telemetry-item">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+          <span>Verified Double-Entry Session Proofs</span>
+        </div>
+        <span className="telemetry-sep">•</span>
+        <div className="telemetry-item">
+          <span className="status-dot-active" />
+          <span>Real-time WAL Socket Sync</span>
+        </div>
+        <span className="telemetry-sep">•</span>
+        <div className="telemetry-item">
+          <span>Top 10 Hall of Fame</span>
+        </div>
+      </div>
 
       {/* Empty State when 0 ranked mentors */}
       {totalRankedMentors === 0 && (

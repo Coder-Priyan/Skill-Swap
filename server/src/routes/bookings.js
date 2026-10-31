@@ -393,14 +393,56 @@ router.get('/:id/notes', (req, res) => {
 
 /**
  * POST /api/bookings/:id/rate
- * Learner rates a completed booking (1-5 stars, optional comment)
- * Awards +1 bonus credit to mentor if rating is 5
+ * Learner rates mentor (1-5 stars, awards +1 bonus if 5)
+ * OR Mentor rates learner (1-5 stars on communication & engagement)
  */
 router.post('/:id/rate', (req, res) => {
   try {
     const { id } = req.params;
     const { rating, comment } = req.body || {};
 
+    const existing = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+    if (!existing) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    if (existing.status !== 'completed') {
+      return res.status(409).json({ error: `Cannot rate booking in status '${existing.status}'; must be completed` });
+    }
+
+    // Mentor rating Learner (explicit role: 'mentor')
+    if (existing.mentor_id === req.currentUserId && (req.body?.role === 'mentor' || req.body?.targetRole === 'learner')) {
+      const numRating = Number(rating);
+      if (!Number.isInteger(numRating) || numRating < 1 || numRating > 5) {
+        return res.status(400).json({ error: 'Rating must be an integer between 1 and 5' });
+      }
+      const cleanComment = comment ? String(comment).trim().slice(0, 300) : null;
+      db.prepare(`
+        UPDATE bookings
+        SET mentor_rating = ?, mentor_rating_comment = ?
+        WHERE id = ?
+      `).run(numRating, cleanComment, id);
+
+      const mentor = db.prepare('SELECT name FROM users WHERE id = ?').get(req.currentUserId);
+      const mentorName = mentor ? mentor.name : 'Mentor';
+
+      emitToUser(existing.learner_id, 'booking:rated', {
+        bookingId: existing.id,
+        mentorRating: numRating,
+        mentorComment: cleanComment,
+        mentorName,
+        message: `${mentorName} shared positive feedback on your session!`,
+      });
+
+      const updated = getBookingById(id, req.currentUserId, db);
+      return res.json({
+        booking: updated,
+        role: 'mentor',
+        bonusPaid: false,
+      });
+    }
+
+    // Learner rating Mentor
     const result = rateBooking(id, req.currentUserId, rating, comment, db);
 
     // After commit, emit socket events
@@ -432,6 +474,7 @@ router.post('/:id/rate', (req, res) => {
       booking: result.booking,
       bonusPaid: result.bonusPaid,
       bonusEntryId: result.bonusEntryId,
+      role: 'learner',
     });
   } catch (err) {
     const status = err.status || 500;

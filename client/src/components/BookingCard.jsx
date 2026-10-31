@@ -3,6 +3,24 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { acceptBooking, declineBooking, cancelBooking } from '../api.js';
 
+const LANG_COLORS = {
+  React: '#61dafb',
+  TypeScript: '#3178c6',
+  JavaScript: '#f1e05a',
+  Python: '#3572A5',
+  'CSS/UI': '#563d7c',
+  'Node.js': '#026e00',
+  'System Design': '#8a63d2',
+  DSA: '#e34c26',
+  Java: '#b07219',
+  'SQL/Database Design': '#e38c00',
+  'DevOps/Docker': '#384d54',
+  Flutter: '#02569B',
+  'WebGL/Three.js': '#ff3e00',
+  Git: '#f05032',
+  'Machine Learning': '#ff6f61',
+};
+
 function formatRelativeTime(dateString) {
   if (!dateString) return '';
   const now = new Date();
@@ -114,11 +132,12 @@ export default function BookingCard({
 
       <div className="booking-card-body">
         <div className="booking-meta-row">
-          <span className="topic-tag">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-            </svg>
-            {booking.topic}
+          <span className="topic-tag gh-lang-tag">
+            <span
+              className="gh-lang-color-dot"
+              style={{ backgroundColor: LANG_COLORS[booking.topic] || '#8b949e' }}
+            />
+            <span>{booking.topic}</span>
           </span>
           <span className="slot-tag">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
@@ -130,7 +149,17 @@ export default function BookingCard({
             {booking.slot_label || 'Scheduled Slot'}
           </span>
           <span className="cost-tag monospace-tabular">
-            {booking.cost} cr
+            {booking.status === 'completed' ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                {booking.cost} cr settled
+              </span>
+            ) : (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                {booking.cost} cr escrow
+              </span>
+            )}
           </span>
         </div>
 
@@ -291,10 +320,10 @@ export default function BookingCard({
               {/* Active Join room link */}
               <Link
                 to={`/room/${booking.id}`}
-                className="btn btn-sm btn-primary"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                className="btn btn-sm btn-join-live-room"
               >
-                <span>Join Live Room</span>
+                <span className="live-room-pulse-dot" />
+                <span>Join Live Studio</span>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="5" y1="12" x2="19" y2="12" />
                   <polyline points="12 5 19 12 12 19" />
@@ -322,23 +351,42 @@ export default function BookingCard({
                 <span>Notes</span>
               </Link>
 
-              {booking.rating ? (
-                <div className="booking-card-rating">
-                  <span className="rating-score-pill">★ {booking.rating}/5</span>
-                  {booking.rating_comment && (
-                    <div className="booking-rating-comment">
-                      "{booking.rating_comment}"
-                    </div>
-                  )}
-                </div>
-              ) : (
-                role === 'learner' && (
+              {role === 'learner' ? (
+                booking.rating ? (
+                  <div className="booking-card-rating">
+                    <span className="rating-score-pill">{booking.rating}/5</span>
+                    {booking.rating_comment && (
+                      <div className="booking-rating-comment">
+                        "{booking.rating_comment}"
+                      </div>
+                    )}
+                  </div>
+                ) : (
                   <button
                     className="btn btn-sm btn-primary btn-rate"
                     onClick={() => onOpenRateModal && onOpenRateModal(booking)}
                     style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
                   >
-                    <span>★ Review</span>
+                    <span>Rate Mentor</span>
+                  </button>
+                )
+              ) : (
+                booking.mentor_rating ? (
+                  <div className="booking-card-rating">
+                    <span className="rating-score-pill">{booking.mentor_rating}/5</span>
+                    {booking.mentor_rating_comment && (
+                      <div className="booking-rating-comment">
+                        "{booking.mentor_rating_comment}"
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    className="btn btn-sm btn-primary btn-rate"
+                    onClick={() => onOpenRateModal && onOpenRateModal(booking)}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                  >
+                    <span>Rate Learner</span>
                   </button>
                 )
               )}

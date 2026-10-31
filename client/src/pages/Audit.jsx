@@ -80,38 +80,63 @@ export default function Audit({ currentUser }) {
 
   return (
     <div className="page-container audit-page">
-      <header className="page-header audit-page-header">
-        <div>
-          <h1 className="page-title">Ledger Integrity & Audit</h1>
-          <p className="page-subtitle">
-            Real-time mathematical verification of double-entry credit flows, platform minting, and zero-sum settlements.
+      {/* Developer Subhead */}
+      <div className="directory-subhead">
+        <div className="directory-subhead-left">
+          <div className="directory-title-row">
+            <h1 className="directory-subhead-title">Double-Entry Ledger Integrity</h1>
+            <span className="directory-badge-counter">
+              {checks.filter((c) => c.ok).length}/{checks.length} assertions verified
+            </span>
+          </div>
+          <p className="directory-subhead-desc">
+            Real-time mathematical validation of zero-sum token conservation, immutable double-entry journal postings, and Escrow WAL transactions.
           </p>
         </div>
-        <button
-          className={`btn btn-secondary audit-refresh-btn ${refreshing ? 'loading' : ''}`}
-          onClick={() => fetchAudit(true)}
-          disabled={refreshing}
-          aria-label="Re-run audit verification"
-        >
-          <svg
-            className={`refresh-icon ${refreshing ? 'spinning' : ''}`}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            width="14"
-            height="14"
-            style={{ marginRight: '6px' }}
+        <div className="directory-subhead-actions">
+          <button
+            className={`btn btn-secondary audit-refresh-btn ${refreshing ? 'loading' : ''}`}
+            onClick={() => fetchAudit(true)}
+            disabled={refreshing}
+            aria-label="Re-run audit verification"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
-            <polyline points="23 4 23 10 17 10" />
-            <polyline points="1 20 1 14 7 14" />
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-          </svg>
-          {refreshing ? 'Verifying...' : 'Re-run workflow'}
-        </button>
-      </header>
+            <svg
+              className={`refresh-icon ${refreshing ? 'spinning' : ''}`}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              width="13"
+              height="13"
+            >
+              <polyline points="23 4 23 10 17 10" />
+              <polyline points="1 20 1 14 7 14" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+            <span>{refreshing ? 'Verifying...' : 'Re-run Assertions'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Subtle Telemetry Strip */}
+      <div className="telemetry-meta-strip" style={{ marginBottom: '1.75rem' }}>
+        <div className="telemetry-item">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Zero-Sum Conservation Guaranteed</span>
+        </div>
+        <span className="telemetry-sep">•</span>
+        <div className="telemetry-item">
+          <span className="status-dot-active" />
+          <span>Real-time WAL Socket Listener</span>
+        </div>
+        <span className="telemetry-sep">•</span>
+        <div className="telemetry-item">
+          <span>Deterministic Audit Invariants</span>
+        </div>
+      </div>
 
       {/* GitHub Actions Style Workflow Status Banner */}
       <section className={`audit-status-banner ${allChecksPassed && conserved ? 'banner-pass' : 'banner-fail'}`}>

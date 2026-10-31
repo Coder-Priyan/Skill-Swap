@@ -192,9 +192,19 @@ export function initSchemaForDb(targetDb) {
       WHERE booking_id IS NOT NULL;
   `);
 
-  // Migration for cancelled_by column if table already existed
+  // Migration for cancelled_by, mentor_rating, mentor_rating_comment columns if table already existed
   try {
     targetDb.exec('ALTER TABLE bookings ADD COLUMN cancelled_by TEXT;');
+  } catch {
+    // Column already exists
+  }
+  try {
+    targetDb.exec('ALTER TABLE bookings ADD COLUMN mentor_rating INTEGER;');
+  } catch {
+    // Column already exists
+  }
+  try {
+    targetDb.exec('ALTER TABLE bookings ADD COLUMN mentor_rating_comment TEXT;');
   } catch {
     // Column already exists
   }

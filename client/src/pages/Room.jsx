@@ -81,8 +81,16 @@ export default function Room() {
 
         // Verify status
         if (data.status === 'completed') {
+          setBooking(data);
           setSessionEnded(true);
+          setIsReadOnly(true);
           setLoading(false);
+          const isLearner = data.learner_id === currentUserId;
+          const isMentor = data.mentor_id === currentUserId;
+          const userAlreadyRated = isLearner ? !!data.rating : !!data.mentor_rating;
+          if (!userAlreadyRated) {
+            setShowRatingModal(true);
+          }
           return;
         }
 
@@ -157,6 +165,7 @@ export default function Room() {
       } catch (_) {}
     }
     setSettlementData(data);
+    setShowRatingModal(true); // Automatically open rating for both peers
   }, []);
 
   // End session handler (trigger settlement)
@@ -330,32 +339,34 @@ export default function Room() {
           const name = state.user.name || 'Peer';
           css += `
             .yRemoteSelection.yRemoteSelection-${clientID} {
-              background-color: ${color}33 !important;
+              background-color: ${color}20 !important;
             }
             .yRemoteSelectionHead.yRemoteSelectionHead-${clientID} {
               position: absolute;
               border-left: 2px solid ${color} !important;
-              border-top: 2px solid ${color} !important;
-              border-bottom: 2px solid ${color} !important;
               height: 100%;
               box-sizing: border-box;
             }
             .yRemoteSelectionHead.yRemoteSelectionHead-${clientID}::after {
               position: absolute;
               content: '${name.replace(/'/g, "\\'")}';
-              top: -1.35em;
-              left: -2px;
-              background: ${color};
-              color: #ffffff;
-              font-size: 11px;
-              font-family: sans-serif;
-              font-weight: 600;
-              padding: 1px 5px;
-              border-radius: 3px;
-              white-space: nowrap;
-              pointer-events: none;
-              z-index: 10;
-              box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+              top: -14px;
+              left: 2px;
+              background: rgba(13, 17, 26, 0.75) !important;
+              border: 1px solid ${color}aa !important;
+              color: #f1f5f9 !important;
+              font-size: 9px !important;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif !important;
+              font-weight: 600 !important;
+              padding: 0 4px !important;
+              border-radius: 3px !important;
+              white-space: nowrap !important;
+              pointer-events: none !important;
+              z-index: 40 !important;
+              line-height: 12px !important;
+              backdrop-filter: blur(4px) !important;
+              opacity: 0.85;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
             }
           `;
         }
@@ -457,38 +468,97 @@ export default function Room() {
     );
   }
 
-  if (sessionEnded) {
+  if (sessionEnded && !showRatingModal && !settlementData) {
+    const isLearner = booking?.learner_id === currentUserId;
+    const isMentor = booking?.mentor_id === currentUserId;
+    const userAlreadyRated = isLearner ? !!booking?.rating : !!booking?.mentor_rating;
+
     return (
-      <div className="card room-notice-card">
-        <span className="notice-icon" aria-hidden="true">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-            <line x1="4" y1="22" x2="4" y2="15" />
-          </svg>
-        </span>
-        <h2>This session has ended</h2>
-        <p>The code and mentorship session have completed and the room is closed.</p>
-        <Link to="/bookings" className="btn btn-primary" style={{ marginTop: '1.25rem' }}>
-          Back to Bookings
-        </Link>
+      <div className="room-centered-state-wrapper">
+        <div className="card room-notice-card">
+          <div className="notice-icon-wrapper" aria-hidden="true">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+          </div>
+          <h2 className="notice-title">This session has ended</h2>
+          <p className="notice-desc">
+            The collaborative code and mentorship session have completed and the room is closed. Escrow credits have been settled on the audited ledger.
+          </p>
+
+          {booking && (
+            <div className="notice-summary-box">
+              <div className="summary-item">
+                <span className="summary-label">Topic:</span>
+                <span className="summary-val">{booking.topic}</span>
+              </div>
+              <div className="summary-item">
+                <span className="summary-label">Audited Escrow:</span>
+                <span className="summary-val monospace-tabular">{booking.cost} credits</span>
+              </div>
+              {booking.learner && booking.mentor && (
+                <div className="summary-item">
+                  <span className="summary-label">Peers:</span>
+                  <span className="summary-val">{booking.learner.name} (Learner) & {booking.mentor.name} (Mentor)</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="notice-actions">
+            {!userAlreadyRated && booking && (
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => setShowRatingModal(true)}
+              >
+                Rate this Session
+              </button>
+            )}
+            {booking && (
+              <Link to={`/sessions/${booking.id}`} className="btn btn-secondary">
+                View Saved Code & Notes
+              </Link>
+            )}
+            <Link to="/bookings" className="btn btn-secondary">
+              Back to Bookings
+            </Link>
+          </div>
+        </div>
+
+        {/* Post-Session Mutual Rating Modal */}
+        <RatingModal
+          booking={booking}
+          isOpen={showRatingModal}
+          onClose={() => setShowRatingModal(false)}
+          onSuccess={(updated) => {
+            setShowRatingModal(false);
+            if (updated) setBooking((prev) => ({ ...prev, ...updated }));
+          }}
+        />
       </div>
     );
   }
 
   if (error || !booking) {
     return (
-      <div className="card room-notice-card">
-        <span className="notice-icon" aria-hidden="true">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-          </svg>
-        </span>
-        <h2>Access Restricted</h2>
-        <p>{error || 'Room unavailable'}</p>
-        <Link to="/bookings" className="btn btn-secondary" style={{ marginTop: '1.25rem' }}>
-          Back to Bookings
-        </Link>
+      <div className="room-centered-state-wrapper">
+        <div className="card room-notice-card">
+          <div className="notice-icon-wrapper" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', background: 'rgba(239, 68, 68, 0.1)' }} aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </div>
+          <h2 className="notice-title">Access Restricted</h2>
+          <p className="notice-desc">{error || 'Room unavailable'}</p>
+          <div className="notice-actions">
+            <Link to="/bookings" className="btn btn-secondary">
+              Back to Bookings
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
@@ -497,13 +567,15 @@ export default function Room() {
   const isMentorPresent = presenceUsers.some((u) => u.id === booking.mentor_id);
 
   return (
-    <div className="room-layout-container">
+    <div className="room-page-container room-layout-container">
       {/* Top Header Bar */}
       <header className="room-header-bar">
         <div className="room-header-left">
           <Link to="/bookings" className="room-back-btn" title="Leave room view">
             ← Bookings
           </Link>
+
+          <span className="room-header-sep" />
 
           <div className="room-topic-badge">
             <span className="topic-icon">
@@ -516,6 +588,8 @@ export default function Room() {
             </span>
             <span className="topic-title">{booking.topic}</span>
           </div>
+
+          <span className="room-header-sep" />
 
           <div className="room-participants-presence">
             {/* Learner */}
@@ -577,20 +651,28 @@ export default function Room() {
           </div>
 
           {/* Escrow Credit Chip */}
-          <div className="room-cost-chip" title="Session cost held in reservation">
+          <div className="room-cost-chip" title="Session credits locked in escrow until completion">
+            <svg className="escrow-shield-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             <span className="monospace-tabular">{booking.cost} cr</span>
-            <span style={{ opacity: 0.75, marginLeft: '4px' }}>held in escrow</span>
+            <span className="escrow-subtext">Escrow</span>
           </div>
 
-          {/* End Session Button (Slice 6) */}
-          <button
-            className="btn btn-sm btn-danger end-session-btn"
-            onClick={() => setShowConfirmModal(true)}
-            disabled={endingSession || sessionEnded}
-            title="End session and settle credits"
-          >
-            {endingSession ? 'Settling...' : 'End session'}
-          </button>
+          {/* End Session Button or Ended Chip */}
+          {sessionEnded ? (
+            <div className="session-ended-chip" title="Session has completed and editor is read-only">
+              <span className="ended-chip-dot" />
+              <span>Session Ended</span>
+            </div>
+          ) : (
+            <button
+              className="btn btn-sm btn-danger end-session-btn"
+              onClick={() => setShowConfirmModal(true)}
+              disabled={endingSession || sessionEnded}
+              title="End session and settle credits"
+            >
+              {endingSession ? 'Settling...' : 'End session'}
+            </button>
+          )}
         </div>
       </header>
 
@@ -599,26 +681,39 @@ export default function Room() {
         {/* Monaco Editor Pane */}
         <div className="editor-pane-container">
           <div className="editor-controls-bar">
-            <div className="editor-language-select-wrap">
-              <span className="control-label">Language:</span>
-              <select
-                className="language-select-dropdown"
-                value={selectedLanguage}
-                onChange={(e) => handleLanguageChange(e.target.value)}
-              >
-                {LANGUAGES.map((l) => (
-                  <option key={l.value} value={l.value}>
-                    {l.label}
-                  </option>
-                ))}
-              </select>
+            <div className="editor-file-tab active">
+              <span className="file-tab-icon">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              </span>
+              <span className="file-tab-name">
+                {selectedLanguage === 'python' ? 'solution.py' : selectedLanguage === 'javascript' ? 'solution.js' : selectedLanguage === 'typescript' ? 'solution.ts' : selectedLanguage === 'cpp' ? 'solution.cpp' : selectedLanguage === 'html' ? 'index.html' : selectedLanguage === 'css' ? 'styles.css' : 'query.sql'}
+              </span>
+              <span className="file-tab-live-badge">live</span>
             </div>
 
-            <div className="editor-status-indicators">
-              <span className="editor-collab-tag" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                <span className="presence-dot online" style={{ width: '6px', height: '6px' }} />
-                <span>Yjs CRDT Sync Active</span>
-              </span>
+            <div className="editor-controls-right">
+              <div className="editor-language-select-wrap">
+                <span className="control-label">Lang:</span>
+                <select
+                  className="language-select-dropdown"
+                  value={selectedLanguage}
+                  onChange={(e) => handleLanguageChange(e.target.value)}
+                  aria-label="Select Programming Language"
+                >
+                  {LANGUAGES.map((l) => (
+                    <option key={l.value} value={l.value}>
+                      {l.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="editor-status-indicators">
+                <span className="editor-collab-tag" title="Peer-to-peer real-time document synchronization via CRDT">
+                  <span className="presence-dot online" style={{ width: '6px', height: '6px' }} />
+                  <span>CRDT Active</span>
+                </span>
+              </div>
             </div>
           </div>
 
@@ -725,68 +820,110 @@ export default function Room() {
 
       {/* Confirm End Session Modal */}
       {showConfirmModal && (
-        <div className="modal-backdrop">
-          <div className="modal-content confirm-modal">
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+          <div className="modal-card confirm-modal">
             <div className="modal-header">
-              <h3>End session?</h3>
-            </div>
-            <div className="modal-body">
-              <p>
-                End session and move <strong>{booking?.cost || 5} cr</strong> from{' '}
-                <strong>{booking?.learner?.name || 'Learner'}</strong> to{' '}
-                <strong>{booking?.mentor?.name || 'Mentor'}</strong>?
+              <div className="confirm-icon-pill">
+                <svg className="confirm-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <span>Complete & Settle</span>
+              </div>
+              <h2 id="confirm-modal-title" className="modal-title">
+                End Pair Mentorship Session?
+              </h2>
+              <p className="modal-subtitle">
+                This will lock the collaborative code editor and release escrow credits.
               </p>
             </div>
-            <div className="modal-footer">
+
+            <div className="confirm-transfer-card">
+              <div className="transfer-party">
+                <span className="party-role">Learner</span>
+                <span className="party-name">{booking?.learner?.name}</span>
+              </div>
+              <div className="transfer-flow">
+                <span className="transfer-amount monospace-tabular">{booking?.cost || 5} cr</span>
+                <span className="transfer-arrow">→</span>
+              </div>
+              <div className="transfer-party">
+                <span className="party-role">Mentor</span>
+                <span className="party-name">{booking?.mentor?.name}</span>
+              </div>
+            </div>
+
+            <p className="confirm-followup-hint">
+              Both participants will be prompted to exchange ratings and technical feedback upon completion.
+            </p>
+
+            <div className="modal-actions">
               <button
-                className="btn btn-secondary"
+                type="button"
+                className="btn btn-secondary modal-skip-btn"
                 onClick={() => setShowConfirmModal(false)}
                 disabled={endingSession}
               >
-                Cancel
+                Keep Pairing
               </button>
               <button
-                className="btn btn-danger"
+                type="button"
+                className="btn btn-danger confirm-end-action-btn"
                 onClick={handleEndSession}
                 disabled={endingSession}
               >
-                {endingSession ? 'Ending session...' : 'End session'}
+                {endingSession ? 'Settling...' : 'Confirm & End Session'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Settlement Result Modal */}
-      {settlementData && (
-        <div className="modal-backdrop">
-          <div className="modal-content settlement-modal">
+      {/* Post-Session Mutual Rating Modal for Both Learner and Mentor */}
+      <RatingModal
+        booking={booking}
+        isOpen={showRatingModal}
+        onClose={() => setShowRatingModal(false)}
+        onSuccess={(updatedBooking) => {
+          setShowRatingModal(false);
+          if (updatedBooking) {
+            setBooking((prev) => ({ ...prev, ...updatedBooking }));
+          }
+        }}
+      />
+
+      {/* Settlement Result Modal (shown once rating is submitted or skipped) */}
+      {settlementData && !showRatingModal && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="modal-card settlement-modal">
             <div className="settlement-modal-header">
-              <div className="settlement-modal-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <div className="settlement-modal-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                   <polyline points="22 4 12 14.01 9 11.01" />
                 </svg>
               </div>
-              <h2>Session complete</h2>
+              <h2 className="modal-title">Session Complete & Settled</h2>
+              <p className="modal-subtitle">Escrow released and ledger transactions audited</p>
             </div>
+
             <div className="settlement-modal-body">
-              <p className="settlement-credits-transfer-line">
-                <strong className="monospace-tabular">{settlementData.amount} cr</strong> transferred from{' '}
-                <strong>{settlementData.learner?.name || booking?.learner?.name}</strong> to{' '}
-                <strong>{settlementData.mentor?.name || booking?.mentor?.name}</strong>
-              </p>
+              <div className="settlement-transfer-banner">
+                <span className="transfer-badge">Audited Ledger Transfer</span>
+                <p className="settlement-credits-transfer-line">
+                  <strong className="monospace-tabular">{settlementData.amount} cr</strong> transferred from{' '}
+                  <span className="party-highlight">{settlementData.learner?.name || booking?.learner?.name}</span> to{' '}
+                  <span className="party-highlight">{settlementData.mentor?.name || booking?.mentor?.name}</span>
+                </p>
+              </div>
 
               {typeof settlementData.my_new_balance === 'number' && (
                 <div className="settlement-user-balance-box">
-                  <span className="balance-label">Your new balance:</span>
+                  <span className="balance-label">Your updated balance:</span>
                   <span className="balance-value monospace-tabular">{settlementData.my_new_balance} cr</span>
                 </div>
               )}
 
               {settlementData.leveled_up && (
                 <div className="settlement-levelup-card">
-                  <div className="levelup-badge-tag">Level Up!</div>
+                  <div className="levelup-badge-tag">Level Promotion</div>
                   <div className="levelup-text">
                     <strong>{settlementData.mentor?.name || booking?.mentor?.name}</strong> reached{' '}
                     <strong>Level {settlementData.mentor_level_after} ({settlementData.mentor_level_after === 3 ? 'Mentor' : 'Helper'})</strong>
@@ -794,55 +931,33 @@ export default function Room() {
                 </div>
               )}
             </div>
-            <div className="modal-footer settlement-modal-footer">
+
+            <div className="modal-actions settlement-modal-footer">
               <button
-                className="btn btn-outline btn-notes"
-                onClick={() => navigate(`/sessions/${booking.id}`)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                </svg>
-                <span>View notes</span>
-              </button>
-              <button
+                type="button"
                 className="btn btn-secondary"
-                onClick={() => {
-                  if (booking?.learner_id === currentUserId && !booking?.rating) {
-                    setSettlementData(null);
-                    setShowRatingModal(true);
-                  } else {
-                    navigate('/bookings');
-                  }
-                }}
+                onClick={() => setSettlementData(null)}
               >
-                Back to My Bookings
+                Inspect Code
               </button>
               <button
-                className="btn btn-primary"
-                onClick={() => navigate('/profile')}
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => navigate(`/sessions/${booking.id}`)}
               >
-                View my ledger
+                View Saved Code & Notes
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => navigate('/bookings')}
+              >
+                Back to Bookings
               </button>
             </div>
           </div>
         </div>
       )}
-
-      {/* Post-Session Rating Modal for Learner */}
-      <RatingModal
-        booking={booking}
-        isOpen={showRatingModal}
-        onClose={() => {
-          setShowRatingModal(false);
-          navigate('/bookings');
-        }}
-        onSuccess={() => {
-          setShowRatingModal(false);
-          navigate('/bookings');
-        }}
-      />
     </div>
   );
 }
