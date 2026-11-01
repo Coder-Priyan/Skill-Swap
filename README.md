@@ -92,56 +92,6 @@ Exact package versions from [client/package.json](client/package.json) and [serv
 
 ---
 
-## Screenshots
-
-<table>
-  <tr>
-    <td align="center">
-      <img src="docs/screenshots/directory.png" width="440" /><br />
-      <b>Peer Directory & Studio Spotlight Terminal</b><br />
-      Live mentor feed, status telemetry, credential inspection, and deterministic smart matching.
-    </td>
-    <td align="center">
-      <img src="docs/screenshots/live-room.png" width="440" /><br />
-      <b>Live Collaborative Pairing Studio</b><br />
-      Monaco IDE with Yjs CRDT real-time concurrency, P2P encrypted voice, and live chat.
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <img src="docs/screenshots/bug-hunt.png" width="440" /><br />
-      <b>Daily Bug Hunt Earning Cockpit</b><br />
-      5 daily rotating software debugging challenges with automated grading and instant ledger rewards.
-    </td>
-    <td align="center">
-      <img src="docs/screenshots/community-notes.png" width="440" /><br />
-      <b>Community Cheat-Sheets Repository</b><br />
-      High-yield developer reference guides with instant copy/download and publication rewards.
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <img src="docs/screenshots/audit.png" width="440" /><br />
-      <b>Double-Entry Ledger Audit</b><br />
-      Mathematical invariant verification, credit conservation proof, and transaction ledger.
-    </td>
-    <td align="center">
-      <img src="docs/screenshots/profile.png" width="440" /><br />
-      <b>Developer Profile & Activity Heatmap</b><br />
-      10-week GitHub-style contribution heatmap, verified streaks, and 3-tier level progression.
-    </td>
-  </tr>
-  <tr>
-    <td align="center" colspan="2">
-      <img src="docs/screenshots/bookings.png" width="540" /><br />
-      <b>Session Escrow & Bookings Management</b><br />
-      Real-time booking lifecycle management, escrow credit locks, and post-session rating triggers.
-    </td>
-  </tr>
-</table>
-
----
-
 ## How It Works: High-Throughput Pairing Flow
 
 ```
