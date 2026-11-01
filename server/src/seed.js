@@ -2,7 +2,7 @@ import { db as defaultDb, initSchemaForDb } from './db.js';
 import { STARTING_CREDITS, SESSION_COST } from './config.js';
 
 export function runSeed(targetDb = defaultDb) {
-  console.log('🌱 Starting deterministic database seed for SkillSwap...');
+  console.log('[SkillSwap] Starting deterministic database seed...');
 
   // Ensure tables and indexes are initialized
   initSchemaForDb(targetDb);
@@ -17,7 +17,7 @@ export function runSeed(targetDb = defaultDb) {
     DELETE FROM users;
   `);
 
-  console.log('🧹 Cleared existing data.');
+  console.log('[SkillSwap] Cleared existing data.');
 
   // 14 anonymous users per SPEC.md Section 11
   const users = [
@@ -435,7 +435,7 @@ export function runSeed(targetDb = defaultDb) {
   const ledgerCount = targetDb.prepare('SELECT COUNT(*) AS count FROM ledger_entries').get().count;
   const totalDelta = targetDb.prepare('SELECT SUM(delta) AS sum FROM ledger_entries').get().sum;
 
-  console.log('✅ Seed completed successfully:');
+  console.log('[SkillSwap] Seed completed successfully:');
   console.log(`   - Users: ${userCount}`);
   console.log(`   - Bookings: ${bookingCount}`);
   console.log(`   - Ledger Entries: ${ledgerCount}`);
